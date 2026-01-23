@@ -15,11 +15,15 @@ use OCP\IRequest;
  * Controller for admin settings
  */
 class SettingsController extends Controller {
+    
+    private SettingsService $settingsService;
+    
     public function __construct(
         IRequest $request,
-        private SettingsService $settingsService
+        SettingsService $settingsService
     ) {
         parent::__construct(Application::APP_ID, $request);
+        $this->settingsService = $settingsService;
     }
 
     /**

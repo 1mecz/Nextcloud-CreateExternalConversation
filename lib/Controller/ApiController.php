@@ -16,13 +16,21 @@ use OCP\IUserSession;
  * OCS API Controller for Create External Conversation
  */
 class ApiController extends OCSController {
+    
+    private ConversationService $conversationService;
+    private SettingsService $settingsService;
+    private IUserSession $userSession;
+    
     public function __construct(
         IRequest $request,
-        private ConversationService $conversationService,
-        private SettingsService $settingsService,
-        private IUserSession $userSession
+        ConversationService $conversationService,
+        SettingsService $settingsService,
+        IUserSession $userSession
     ) {
         parent::__construct(Application::APP_ID, $request);
+        $this->conversationService = $conversationService;
+        $this->settingsService = $settingsService;
+        $this->userSession = $userSession;
     }
 
     /**
