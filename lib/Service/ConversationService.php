@@ -95,9 +95,8 @@ class ConversationService {
         $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
 
         $data = [
-            'roomType' => 2, // Group conversation
+            'roomType' => 3, // Public conversation (allows guests via link)
             'roomName' => $roomName,
-            'listable' => 1, // Allow external guests to join via link
         ];
 
         $response = $this->makeRequest('POST', $url, $data);
@@ -109,11 +108,38 @@ class ConversationService {
             ];
         }
 
+        $token = $response['ocs']['data']['token'];
+        
+        // Enable guest access via link by setting it public
+        try {
+            $this->enableGuestAccess($token);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to enable guest access', [
+                'app' => 'create_external_conversation',
+                'token' => $token,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return [
             'success' => true,
-            'token' => $response['ocs']['data']['token'],
+            'token' => $token,
             'roomId' => $response['ocs']['data']['id'] ?? null,
         ];
+    }
+
+    /**
+     * Enable guest access for a room
+     */
+    private function enableGuestAccess(string $token): void {
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token;
+
+        $data = [
+            'allowGuests' => 'yes',
+        ];
+
+        $this->makeRequest('PUT', $url, $data);
     }
 
     /**
