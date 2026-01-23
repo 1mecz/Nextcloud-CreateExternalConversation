@@ -33,9 +33,10 @@ class ApiController extends Controller {
     public function createConversation(string $conversationName, string $federatedUserId): JSONResponse {
         // Get external Nextcloud configuration from system config
         $externalUrl = $this->config->getAppValue('create_external_conversation', 'external_url', '');
-        $apiToken = $this->config->getAppValue('create_external_conversation', 'api_token', '');
+        $username = $this->config->getAppValue('create_external_conversation', 'external_username', '');
+        $password = $this->config->getAppValue('create_external_conversation', 'external_password', '');
 
-        if (empty($externalUrl) || empty($apiToken)) {
+        if (empty($externalUrl) || empty($username) || empty($password)) {
             return new JSONResponse([
                 'error' => 'External Nextcloud not configured. Please ask administrator to configure it in admin settings.'
             ], 400);
@@ -57,7 +58,7 @@ class ApiController extends Controller {
             'roomName' => $conversationName,
         ];
 
-        $conversationResponse = $this->makeApiRequest($createConversationUrl, 'POST', $apiToken, $conversationData);
+        $conversationResponse = $this->makeApiRequest($createConversationUrl, 'POST', $username, $password, $conversationData);
         
         if (!$conversationResponse || isset($conversationResponse['error'])) {
             return new JSONResponse([
@@ -78,7 +79,7 @@ class ApiController extends Controller {
             'source' => 'users', // or 'federated' if needed
         ];
 
-        $addParticipantResponse = $this->makeApiRequest($addParticipantUrl, 'POST', $apiToken, $participantData);
+        $addParticipantResponse = $this->makeApiRequest($addParticipantUrl, 'POST', $username, $password, $participantData);
         
         if (!$addParticipantResponse || isset($addParticipantResponse['error'])) {
             // Continue even if adding participant fails - conversation is created
@@ -94,7 +95,7 @@ class ApiController extends Controller {
             'source' => 'federated',
         ];
 
-        $addCurrentUserResponse = $this->makeApiRequest($addParticipantUrl, 'POST', $apiToken, $addCurrentUserData);
+        $addCurrentUserResponse = $this->makeApiRequest($addParticipantUrl, 'POST', $username, $password, $addCurrentUserData);
         
         if (!$addCurrentUserResponse || isset($addCurrentUserResponse['error'])) {
             error_log('Failed to add current user: ' . json_encode($addCurrentUserResponse));
@@ -114,9 +115,10 @@ class ApiController extends Controller {
     public function getExternalUsers(string $search = ''): JSONResponse {
         // Get external Nextcloud configuration from system config
         $externalUrl = $this->config->getAppValue('create_external_conversation', 'external_url', '');
-        $apiToken = $this->config->getAppValue('create_external_conversation', 'api_token', '');
+        $username = $this->config->getAppValue('create_external_conversation', 'external_username', '');
+        $password = $this->config->getAppValue('create_external_conversation', 'external_password', '');
 
-        if (empty($externalUrl) || empty($apiToken)) {
+        if (empty($externalUrl) || empty($username) || empty($password)) {
             return new JSONResponse([
                 'error' => 'External Nextcloud not configured'
             ], 400);
@@ -128,7 +130,7 @@ class ApiController extends Controller {
         // Search for users on external Nextcloud
         $searchUrl = $externalUrl . '/ocs/v2.php/cloud/users?search=' . urlencode($search);
         
-        $response = $this->makeApiRequest($searchUrl, 'GET', $apiToken);
+        $response = $this->makeApiRequest($searchUrl, 'GET', $username, $password);
         
         if (!$response || isset($response['error'])) {
             return new JSONResponse([
@@ -143,12 +145,11 @@ class ApiController extends Controller {
         ]);
     }
 
-    private function makeApiRequest(string $url, string $method, string $token, array $data = []): ?array {
+    private function makeApiRequest(string $url, string $method, string $username, string $password, array $data = []): ?array {
         $ch = curl_init();
 
         $headers = [
             'OCS-APIRequest: true',
-            'Authorization: Bearer ' . $token,
             'Accept: application/json',
             'Content-Type: application/json',
         ];
@@ -158,6 +159,8 @@ class ApiController extends Controller {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_USERPWD, $username . ':' . $password);
 
         if ($method === 'POST' && !empty($data)) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));

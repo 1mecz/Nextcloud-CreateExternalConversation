@@ -12,14 +12,23 @@
     </p>
     
     <p>
-        <label for="api-token"><?php p($l->t('API Token')); ?></label>
+        <label for="external-username"><?php p($l->t('Username')); ?></label>
+        <input type="text" 
+               id="external-username" 
+               name="external_username" 
+               value="<?php p($_['external_username']); ?>" 
+               placeholder="<?php p($l->t('Username for external Nextcloud')); ?>" />
+    </p>
+    
+    <p>
+        <label for="external-password"><?php p($l->t('Password')); ?></label>
         <input type="password" 
-               id="api-token" 
-               name="api_token" 
-               value="<?php p($_['api_token']); ?>" 
-               placeholder="<?php p($l->t('Your API token')); ?>" />
+               id="external-password" 
+               name="external_password" 
+               value="<?php p($_['external_password']); ?>" 
+               placeholder="<?php p($l->t('Password or app password')); ?>" />
         <br />
-        <em><?php p($l->t('Generate a token in your external Nextcloud: Settings → Security → Devices & sessions')); ?></em>
+        <em><?php p($l->t('Create app password in external Nextcloud: Settings → Security → Devices & sessions')); ?></em>
     </p>
     
     <button id="save-external-conversation-settings"><?php p($l->t('Save')); ?></button>
@@ -30,7 +39,8 @@
 (function() {
     $('#save-external-conversation-settings').click(function() {
         var external_url = $('#external-url').val();
-        var api_token = $('#api-token').val();
+        var external_username = $('#external-username').val();
+        var external_password = $('#external-password').val();
         
         $.ajax({
             url: OC.generateUrl('/apps/create_external_conversation/settings'),
@@ -38,7 +48,8 @@
             contentType: 'application/json',
             data: JSON.stringify({
                 external_url: external_url,
-                api_token: api_token
+                external_username: external_username,
+                external_password: external_password
             }),
             success: function() {
                 $('#external-conversation-settings-msg')

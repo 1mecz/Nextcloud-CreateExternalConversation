@@ -17,7 +17,8 @@ class Admin implements ISettings {
     public function getForm(): TemplateResponse {
         $parameters = [
             'external_url' => $this->config->getAppValue('create_external_conversation', 'external_url', ''),
-            'api_token' => $this->config->getAppValue('create_external_conversation', 'api_token', ''),
+            'external_username' => $this->config->getAppValue('create_external_conversation', 'external_username', ''),
+            'external_password' => $this->config->getAppValue('create_external_conversation', 'external_password', ''),
         ];
 
         return new TemplateResponse('create_external_conversation', 'settings/admin', $parameters, '');
