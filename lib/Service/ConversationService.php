@@ -58,7 +58,8 @@ class ConversationService {
             $roomId = $createResult['roomId'];
 
             // Step 2: Add current user as federated participant
-            $addCurrentUserResult = $this->addParticipant($token, $currentUserFederatedId, 'federated');
+            // Use 'users' source - Talk API should recognize federated ID format
+            $addCurrentUserResult = $this->addParticipant($token, $currentUserFederatedId, 'users');
 
             // Generate the link
             $externalUrl = $this->settingsService->getExternalUrl();
@@ -110,16 +111,7 @@ class ConversationService {
 
         $token = $response['ocs']['data']['token'];
         
-        // Enable guest access via link by setting it public
-        try {
-            $this->enableGuestAccess($token);
-        } catch (\Exception $e) {
-            $this->logger->warning('Failed to enable guest access', [
-                'app' => 'create_external_conversation',
-                'token' => $token,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // roomType 3 already allows guest access - no need to enable it separately
 
         return [
             'success' => true,
