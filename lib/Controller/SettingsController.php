@@ -21,9 +21,9 @@ class SettingsController extends Controller {
     }
 
     /**
-     * @AuthorizedAdminSetting(settings=OCA\CreateExternalConversation\Settings\Admin)
+     * @NoCSRFRequired
      */
-    public function setConfig(string $external_url, string $external_username, string $external_password): JSONResponse {
+    public function setConfig(string $external_url = '', string $external_username = '', string $external_password = ''): JSONResponse {
         $this->config->setAppValue('create_external_conversation', 'external_url', $external_url);
         $this->config->setAppValue('create_external_conversation', 'external_username', $external_username);
         $this->config->setAppValue('create_external_conversation', 'external_password', $external_password);
