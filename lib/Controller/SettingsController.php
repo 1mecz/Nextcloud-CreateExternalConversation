@@ -7,7 +7,6 @@ use OCA\CreateExternalConversation\AppInfo\Application;
 use OCA\CreateExternalConversation\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
@@ -25,8 +24,9 @@ class SettingsController extends Controller {
 
     /**
      * Show the settings page
+     * 
+     * @AuthorizedAdminSetting(settings=OCA\CreateExternalConversation\Settings\AdminSettings)
      */
-    #[AuthorizedAdminSetting(settings: \OCA\CreateExternalConversation\Settings\AdminSettings::class)]
     public function index(): TemplateResponse {
         return new TemplateResponse(
             Application::APP_ID,
@@ -39,8 +39,9 @@ class SettingsController extends Controller {
 
     /**
      * Save settings
+     * 
+     * @AuthorizedAdminSetting(settings=OCA\CreateExternalConversation\Settings\AdminSettings)
      */
-    #[AuthorizedAdminSetting(settings: \OCA\CreateExternalConversation\Settings\AdminSettings::class)]
     public function save(): JSONResponse {
         $externalServerUrl = $this->request->getParam('externalServerUrl', '');
         $username = $this->request->getParam('username', '');

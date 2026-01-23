@@ -7,7 +7,6 @@ use OCA\CreateExternalConversation\AppInfo\Application;
 use OCA\CreateExternalConversation\Service\ConversationService;
 use OCA\CreateExternalConversation\Service\SettingsService;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCSController;
 use OCP\IRequest;
@@ -28,8 +27,9 @@ class ApiController extends OCSController {
 
     /**
      * Create a conversation on the external server
+     * 
+     * @NoAdminRequired
      */
-    #[NoAdminRequired]
     public function createConversation(string $conversationName = '', string $federatedUserId = ''): DataResponse {
         $conversationName = trim($conversationName);
         $federatedUserId = trim($federatedUserId);
@@ -82,8 +82,9 @@ class ApiController extends OCSController {
 
     /**
      * Search for users on the external server
+     * 
+     * @NoAdminRequired
      */
-    #[NoAdminRequired]
     public function searchUsers(string $search = ''): DataResponse {
         $result = $this->conversationService->searchUsers($search);
 
@@ -102,8 +103,9 @@ class ApiController extends OCSController {
 
     /**
      * Test connection to the external server
+     * 
+     * @NoAdminRequired
      */
-    #[NoAdminRequired]
     public function testConnection(): DataResponse {
         if (!$this->settingsService->isConfigured()) {
             return new DataResponse(
