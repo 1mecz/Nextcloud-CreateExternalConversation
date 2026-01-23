@@ -58,35 +58,40 @@ class ConversationService {
             $roomId = $createResult['roomId'];
 
             // Step 2: Try to add current user as federated participant
-            // Try different source types to find what works
+            // Talk API may require federation invitation endpoint
             $participantAdded = false;
             $addError = null;
             
-            // Try 1: source=circles (for federated users)
-            $result = $this->addParticipant($token, $currentUserFederatedId, 'circles');
-            if ($result['success']) {
-                $participantAdded = true;
-            } else {
-                $addError = $result['error'] ?? 'Unknown error';
-                
-                // Try 2: source=remotes
-                $result = $this->addParticipant($token, $currentUserFederatedId, 'remotes');
+            // Try using federation endpoint (if it exists)
+            try {
+                $federationResult = $this->inviteFederatedUser($token, $currentUserFederatedId);
+                if ($federationResult['success']) {
+                    $participantAdded = true;
+                }
+            } catch (\Exception $e) {
+                $this->logger->info('Federation invite endpoint not available or failed', [
+                    'app' => 'create_external_conversation',
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
+            // Fallback: Try standard participant endpoint with different formats
+            if (!$participantAdded) {
+                // Try format: federated_user/username@server
+                $result = $this->addParticipant($token, 'federated_user/' . $currentUserFederatedId, 'users');
                 if ($result['success']) {
                     $participantAdded = true;
                 } else {
-                    // Try 3: source=emails (maybe it accepts email format)
-                    $result = $this->addParticipant($token, $currentUserFederatedId, 'emails');
-                    if ($result['success']) {
-                        $participantAdded = true;
-                    }
+                    $addError = $result['error'] ?? 'Unknown error';
                 }
             }
             
             if (!$participantAdded) {
-                $this->logger->warning('Could not add federated participant - none of the source types worked', [
+                $this->logger->warning('Could not add federated participant automatically', [
                     'app' => 'create_external_conversation',
                     'federatedId' => $currentUserFederatedId,
                     'lastError' => $addError,
+                    'note' => 'User can still join via public link',
                 ]);
             }
 
@@ -202,6 +207,35 @@ class ConversationService {
                 'success' => false,
                 'error' => $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Invite federated user using federation endpoint
+     */
+    private function inviteFederatedUser(string $token, string $federatedId): array {
+        $externalUrl = $this->settingsService->getExternalUrl();
+        // Try federation/invites endpoint
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/federation/invites';
+
+        $data = [
+            'cloudId' => $federatedId,
+        ];
+
+        try {
+            $response = $this->makeRequest('POST', $url, $data, true);
+            
+            $this->logger->info('Federation invite response', [
+                'app' => 'create_external_conversation',
+                'federatedId' => $federatedId,
+                'response' => $response,
+            ]);
+            
+            return [
+                'success' => true,
+            ];
+        } catch (\Exception $e) {
+            throw $e;  // Re-throw to be caught by caller
         }
     }
 
