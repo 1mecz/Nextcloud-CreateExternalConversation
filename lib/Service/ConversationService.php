@@ -97,6 +97,7 @@ class ConversationService {
         $data = [
             'roomType' => 2, // Group conversation
             'roomName' => $roomName,
+            'listable' => 1, // Allow external guests to join via link
         ];
 
         $response = $this->makeRequest('POST', $url, $data);
