@@ -37,6 +37,7 @@ class ApiController extends OCSController {
      * Create a conversation on the external server
      * 
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function createConversation(string $conversationName = '', string $federatedUserId = ''): DataResponse {
         $conversationName = trim($conversationName);
@@ -92,6 +93,7 @@ class ApiController extends OCSController {
      * Search for users on the external server
      * 
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function searchUsers(string $search = ''): DataResponse {
         $result = $this->conversationService->searchUsers($search);
@@ -113,6 +115,7 @@ class ApiController extends OCSController {
      * Test connection to the external server
      * 
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function testConnection(): DataResponse {
         if (!$this->settingsService->isConfigured()) {
