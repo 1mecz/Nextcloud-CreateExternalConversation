@@ -13,50 +13,88 @@
      * Initialize the app
      */
     OCA.CreateExternalConversation.init = function() {
-        // Wait for Talk to be loaded
-        if (typeof OCA.Talk === 'undefined') {
-            setTimeout(OCA.CreateExternalConversation.init, 500);
+        console.log('CreateExternalConversation: Initializing...');
+        
+        // Check if we're in Talk app
+        const isTalkApp = window.location.pathname.includes('/apps/spreed') || 
+                         window.location.pathname.includes('/call/');
+        
+        if (!isTalkApp) {
+            console.log('CreateExternalConversation: Not in Talk app, skipping');
             return;
         }
-
-        // Add button to Talk sidebar
-        OCA.CreateExternalConversation.addButton();
+        
+        console.log('CreateExternalConversation: In Talk app, adding button');
+        
+        // Wait a bit for Talk to fully load, then add button
+        setTimeout(function() {
+            OCA.CreateExternalConversation.addButton();
+        }, 2000);
     };
 
     /**
      * Add "Create External Conversation" button to Talk
      */
     OCA.CreateExternalConversation.addButton = function() {
-        // Try to find the "New conversation" button or Talk's conversation list
-        const checkForTalkUI = setInterval(function() {
-            // Look for the conversation list container
-            const conversationList = document.querySelector('.conversations');
-            const newConversationButton = document.querySelector('[aria-label="Create a new conversation"]') || 
-                                         document.querySelector('button.new-conversation');
+        console.log('CreateExternalConversation: Attempting to add button...');
+        
+        // Try multiple times to find the right place to insert the button
+        let attempts = 0;
+        const maxAttempts = 20;
+        
+        const tryAddButton = function() {
+            attempts++;
             
-            if (conversationList || newConversationButton) {
-                clearInterval(checkForTalkUI);
+            // Look for various possible container elements in Talk
+            const possibleContainers = [
+                document.querySelector('#app-navigation'),
+                document.querySelector('.app-navigation'),
+                document.querySelector('[data-section="conversations"]'),
+                document.querySelector('.conversations-list'),
+                document.querySelector('#leftcontent'),
+                document.querySelector('.app-navigation-new')
+            ];
+            
+            let container = null;
+            for (let i = 0; i < possibleContainers.length; i++) {
+                if (possibleContainers[i]) {
+                    container = possibleContainers[i];
+                    console.log('CreateExternalConversation: Found container:', container.className || container.id);
+                    break;
+                }
+            }
+            
+            if (container) {
+                // Check if button already exists
+                if (document.querySelector('.external-conversation-button')) {
+                    console.log('CreateExternalConversation: Button already exists');
+                    return;
+                }
                 
                 // Create our button
                 const button = document.createElement('button');
-                button.className = 'external-conversation-button primary';
+                button.className = 'external-conversation-button';
                 button.innerHTML = '<span class="icon-external"></span> Create External Conversation';
                 button.onclick = OCA.CreateExternalConversation.showDialog;
+                button.style.cssText = 'width: 90%; margin: 10px auto; padding: 10px; background-color: #0082c9; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; display: block;';
                 
-                // Try to insert after new conversation button
-                if (newConversationButton && newConversationButton.parentElement) {
-                    newConversationButton.parentElement.insertBefore(button, newConversationButton.nextSibling);
-                } else if (conversationList) {
-                    // Insert at the top of conversation list
-                    conversationList.insertBefore(button, conversationList.firstChild);
+                // Insert at the beginning of container
+                if (container.firstChild) {
+                    container.insertBefore(button, container.firstChild);
+                } else {
+                    container.appendChild(button);
                 }
+                
+                console.log('CreateExternalConversation: Button added successfully!');
+            } else if (attempts < maxAttempts) {
+                console.log('CreateExternalConversation: Container not found, retry ' + attempts + '/' + maxAttempts);
+                setTimeout(tryAddButton, 1000);
+            } else {
+                console.error('CreateExternalConversation: Failed to find container after ' + maxAttempts + ' attempts');
             }
-        }, 500);
-
-        // Stop checking after 10 seconds
-        setTimeout(function() {
-            clearInterval(checkForTalkUI);
-        }, 10000);
+        };
+        
+        tryAddButton();
     };
 
     /**
