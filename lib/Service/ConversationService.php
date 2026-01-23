@@ -57,9 +57,8 @@ class ConversationService {
             $token = $createResult['token'];
             $roomId = $createResult['roomId'];
 
-            // Step 2: Add current user as federated participant
-            // Use 'users' source - Talk API should recognize federated ID format
-            $addCurrentUserResult = $this->addParticipant($token, $currentUserFederatedId, 'users');
+            // Note: Talk API doesn't support adding federated participants via API
+            // The room is public, so users can join via link as guests or logged-in users
 
             // Generate the link
             $externalUrl = $this->settingsService->getExternalUrl();
@@ -71,7 +70,6 @@ class ConversationService {
                 'token' => $token,
                 'roomId' => $roomId,
                 'conversationName' => $conversationName,
-                'currentUserAdded' => $addCurrentUserResult['success'] ?? false,
             ];
 
         } catch (\Exception $e) {
