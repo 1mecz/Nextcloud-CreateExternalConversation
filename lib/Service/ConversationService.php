@@ -147,11 +147,12 @@ class ConversationService {
      */
     private function addParticipant(string $token, string $participantId, string $source = 'users'): array {
         $externalUrl = $this->settingsService->getExternalUrl();
-        // source is a query parameter, not in body
-        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants?source=' . urlencode($source);
+        // Don't include source in URL - it goes in form data
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants';
 
         $data = [
             'newParticipant' => $participantId,
+            'source' => $source,
         ];
 
         try {
