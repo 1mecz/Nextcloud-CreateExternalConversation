@@ -67,22 +67,15 @@
         createConvSection.innerHTML = `
             <h2>Create Conversation</h2>
             <p class="settings-hint">
-                Create a new conversation on the external server.
+                Create a new conversation on the external server. You will be invited as a federated user.
             </p>
             
             <div class="create-conversation-form">
                 <p>
                     <label for="conv-name">Conversation Name:</label>
                     <input type="text" id="conv-name" 
-                           placeholder="Meeting room"
+                           placeholder="e.g., Team Meeting"
                            style="width: 400px;">
-                </p>
-                
-                <p>
-                    <label for="conv-user">Select User:</label>
-                    <select id="conv-user" style="width: 400px;">
-                        <option value="">Loading users...</option>
-                    </select>
                 </p>
                 
                 <p>
@@ -94,59 +87,23 @@
                     <p><strong>Room created!</strong></p>
                     <p>
                         <label>Room URL:</label>
-                        <input type="text" id="result-url" readonly style="width: 100%; margin: 5px 0;" />
+                        <input type="text" id="result-url" readonly style="width: 100%; margin: 5px 0; padding: 8px;" />
                     </p>
                     <button id="copy-url" class="button" style="margin-top: 10px;">Copy URL</button>
+                    <a id="open-url" target="_blank" class="button" style="margin-left: 5px; margin-top: 10px; text-decoration: none; display: inline-block;">Open in new tab</a>
                 </div>
             </div>
         `;
         
         settingsContainer.appendChild(createConvSection);
         
-        // Load users from external server
-        function loadExternalUsers() {
-            fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/users?format=json', {
-                headers: {
-                    'Accept': 'application/json',
-                    'OCS-APIRequest': 'true',
-                    'requesttoken': OC.requestToken
-                }
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.ocs && result.ocs.data && result.ocs.data.success) {
-                    const users = result.ocs.data.users || [];
-                    const userSelect = document.getElementById('conv-user');
-                    userSelect.innerHTML = '<option value="">-- Select User --</option>';
-                    users.forEach(user => {
-                        const option = document.createElement('option');
-                        option.value = user.id || user;
-                        option.textContent = user.displayName ? `${user.displayName} (${user.id})` : user;
-                        userSelect.appendChild(option);
-                    });
-                } else {
-                    console.error('Failed to load users:', result);
-                }
-            })
-            .catch(error => {
-                console.error('Error loading users:', error);
-            });
-        }
-        
         // Create conversation handler
         document.getElementById('create-conversation').addEventListener('click', function() {
             const convName = document.getElementById('conv-name').value.trim();
-            const userId = document.getElementById('conv-user').value;
             const statusEl = document.getElementById('create-status');
             
             if (!convName) {
                 statusEl.textContent = '✗ Please enter conversation name';
-                statusEl.style.color = '#dc3545';
-                return;
-            }
-            
-            if (!userId) {
-                statusEl.textContent = '✗ Please select a user';
                 statusEl.style.color = '#dc3545';
                 return;
             }
@@ -163,8 +120,7 @@
                     'requesttoken': OC.requestToken
                 },
                 body: JSON.stringify({
-                    conversationName: convName,
-                    federatedUserId: userId
+                    conversationName: convName
                 })
             })
             .then(response => response.json())
@@ -174,12 +130,13 @@
                     statusEl.style.color = '#28a745';
                     
                     // Show result with URL
-                    document.getElementById('result-url').value = result.ocs.data.link;
+                    const url = result.ocs.data.link;
+                    document.getElementById('result-url').value = url;
+                    document.getElementById('open-url').href = url;
                     document.getElementById('conversation-result').style.display = 'block';
                     
                     // Clear form
                     document.getElementById('conv-name').value = '';
-                    document.getElementById('conv-user').value = '';
                 } else {
                     throw new Error(result.ocs?.data?.error || 'Failed to create conversation');
                 }
@@ -197,9 +154,6 @@
             document.execCommand('copy');
             alert('URL copied to clipboard!');
         });
-        
-        // Load users on page load
-        loadExternalUsers();
         
         // Save settings handler
         document.getElementById('save-settings').addEventListener('click', function() {

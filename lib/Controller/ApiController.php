@@ -81,20 +81,12 @@ class ApiController extends OCSController {
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function createConversation(string $conversationName = '', string $federatedUserId = ''): DataResponse {
+    public function createConversation(string $conversationName = ''): DataResponse {
         $conversationName = trim($conversationName);
-        $federatedUserId = trim($federatedUserId);
 
         if (empty($conversationName)) {
             return new DataResponse(
                 ['error' => 'Conversation name is required'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
-
-        if (empty($federatedUserId)) {
-            return new DataResponse(
-                ['error' => 'User ID is required'],
                 Http::STATUS_BAD_REQUEST
             );
         }
@@ -107,12 +99,12 @@ class ApiController extends OCSController {
             );
         }
 
+        // Get current user's federated cloud ID (e.g., tomas@nextcloud.kara-uas.cz)
         $currentUserFederatedId = $currentUser->getUID() . '@' . $this->request->getServerHost();
 
         $result = $this->conversationService->createExternalConversation(
             $conversationName,
-            $currentUserFederatedId,
-            $federatedUserId
+            $currentUserFederatedId
         );
 
         if (!$result['success']) {

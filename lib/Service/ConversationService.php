@@ -25,13 +25,11 @@ class ConversationService {
      *
      * @param string $conversationName Name of the conversation
      * @param string $currentUserFederatedId Federated ID of current user (user@domain)
-     * @param string $externalUserId User ID on external Nextcloud to invite
      * @return array
      */
     public function createExternalConversation(
         string $conversationName,
-        string $currentUserFederatedId,
-        string $externalUserId
+        string $currentUserFederatedId
     ): array {
         if (!$this->settingsService->isConfigured()) {
             return [
@@ -59,10 +57,7 @@ class ConversationService {
             $token = $createResult['token'];
             $roomId = $createResult['roomId'];
 
-            // Step 2: Add external user (local to that server)
-            $addExternalUserResult = $this->addParticipant($token, $externalUserId, 'users');
-            
-            // Step 3: Add current user (federated)
+            // Step 2: Add current user as federated participant
             $addCurrentUserResult = $this->addParticipant($token, $currentUserFederatedId, 'federated');
 
             // Generate the link
@@ -75,7 +70,6 @@ class ConversationService {
                 'token' => $token,
                 'roomId' => $roomId,
                 'conversationName' => $conversationName,
-                'externalUserAdded' => $addExternalUserResult['success'] ?? false,
                 'currentUserAdded' => $addCurrentUserResult['success'] ?? false,
             ];
 
