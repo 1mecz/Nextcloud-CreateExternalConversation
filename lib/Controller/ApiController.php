@@ -118,7 +118,8 @@ class ApiController extends OCSController {
             'success' => true,
             'link' => $result['link'],
             'token' => $result['token'],
-            'conversationName' => $conversationName
+            'conversationName' => $conversationName,
+            'message' => 'Conversation created and federated user invited'
         ]);
     }
 

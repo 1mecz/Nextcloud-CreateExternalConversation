@@ -157,12 +157,19 @@ class ConversationService {
         try {
             $response = $this->makeRequest('POST', $url, $data);
             
+            $this->logger->info('Add participant response', [
+                'app' => 'create_external_conversation',
+                'participant' => $participantId,
+                'source' => $source,
+                'response' => $response,
+            ]);
+            
             return [
                 'success' => true,
                 'participant' => $participantId,
             ];
         } catch (\Exception $e) {
-            $this->logger->warning('Failed to add participant', [
+            $this->logger->error('Failed to add participant', [
                 'app' => 'create_external_conversation',
                 'participant' => $participantId,
                 'source' => $source,
