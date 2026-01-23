@@ -106,7 +106,8 @@
             statusEl.textContent = 'Testing connection...';
             statusEl.style.color = '#888';
             
-            fetch(OC.generateUrl('/ocs/v2.php/apps/create_external_conversation/api/v1/test'), {
+            // Use absolute OCS endpoint (OC.generateUrl adds index.php and breaks OCS)
+            fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/test?format=json', {
                 headers: {
                     'Accept': 'application/json',
                     'OCS-APIRequest': 'true',
