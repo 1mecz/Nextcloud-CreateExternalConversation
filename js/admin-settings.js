@@ -109,10 +109,16 @@
             fetch(OC.generateUrl('/ocs/v2.php/apps/create_external_conversation/api/v1/test'), {
                 headers: {
                     'Accept': 'application/json',
+                    'OCS-APIRequest': 'true',
                     'requesttoken': OC.requestToken
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.ocs && result.ocs.data && result.ocs.data.success) {
                     statusEl.textContent = '✓ Connection successful';
