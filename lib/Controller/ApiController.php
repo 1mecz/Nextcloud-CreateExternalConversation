@@ -31,13 +31,13 @@ class ApiController extends Controller {
      * @NoAdminRequired
      */
     public function createConversation(string $conversationName, string $federatedUserId): JSONResponse {
-        // Get external Nextcloud configuration
-        $externalUrl = $this->config->getUserValue($this->userId, 'create_external_conversation', 'external_url', '');
-        $apiToken = $this->config->getUserValue($this->userId, 'create_external_conversation', 'api_token', '');
+        // Get external Nextcloud configuration from system config
+        $externalUrl = $this->config->getAppValue('create_external_conversation', 'external_url', '');
+        $apiToken = $this->config->getAppValue('create_external_conversation', 'api_token', '');
 
         if (empty($externalUrl) || empty($apiToken)) {
             return new JSONResponse([
-                'error' => 'External Nextcloud not configured. Please configure it in your personal settings.'
+                'error' => 'External Nextcloud not configured. Please ask administrator to configure it in admin settings.'
             ], 400);
         }
 
@@ -112,9 +112,9 @@ class ApiController extends Controller {
      * @NoAdminRequired
      */
     public function getExternalUsers(string $search = ''): JSONResponse {
-        // Get external Nextcloud configuration
-        $externalUrl = $this->config->getUserValue($this->userId, 'create_external_conversation', 'external_url', '');
-        $apiToken = $this->config->getUserValue($this->userId, 'create_external_conversation', 'api_token', '');
+        // Get external Nextcloud configuration from system config
+        $externalUrl = $this->config->getAppValue('create_external_conversation', 'external_url', '');
+        $apiToken = $this->config->getAppValue('create_external_conversation', 'api_token', '');
 
         if (empty($externalUrl) || empty($apiToken)) {
             return new JSONResponse([

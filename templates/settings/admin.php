@@ -1,6 +1,6 @@
 <div id="create_external_conversation" class="section">
     <h2><?php p($l->t('Create External Conversation')); ?></h2>
-    <p class="settings-hint"><?php p($l->t('Configure connection to external Nextcloud instance for creating Talk conversations.')); ?></p>
+    <p class="settings-hint"><?php p($l->t('Configure connection to external Nextcloud instance for creating Talk conversations. All users will be able to use this configuration.')); ?></p>
     
     <p>
         <label for="external-url"><?php p($l->t('External Nextcloud URL')); ?></label>

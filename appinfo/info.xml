@@ -22,6 +22,7 @@
     </dependencies>
     
     <settings>
-        <personal>OCA\CreateExternalConversation\Settings\Personal</personal>
+        <admin>OCA\CreateExternalConversation\Settings\Admin</admin>
+        <admin-section>OCA\CreateExternalConversation\Settings\AdminSection</admin-section>
     </settings>
 </info>
