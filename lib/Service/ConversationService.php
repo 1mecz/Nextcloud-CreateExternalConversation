@@ -1,0 +1,225 @@
+<?php
+declare(strict_types=1);
+
+namespace OCA\CreateExternalConversation\Service;
+
+use OCP\Http\Client\IClientService;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Service for creating conversations on external Nextcloud
+ */
+class ConversationService {
+    private const TALK_API_ENDPOINT = '/ocs/v2.php/apps/spreed/api/v4/room';
+    private const USERS_API_ENDPOINT = '/ocs/v2.php/cloud/users';
+
+    public function __construct(
+        private SettingsService $settingsService,
+        private IClientService $clientService,
+        private LoggerInterface $logger
+    ) {
+    }
+
+    /**
+     * Create a new conversation on external Nextcloud
+     *
+     * @param string $conversationName Name of the conversation
+     * @param string $currentUserFederatedId Federated ID of current user (user@domain)
+     * @param string $externalUserId User ID on external Nextcloud to invite
+     * @return array
+     */
+    public function createExternalConversation(
+        string $conversationName,
+        string $currentUserFederatedId,
+        string $externalUserId
+    ): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'App is not configured. Please ask administrator to configure it.',
+            ];
+        }
+
+        $conversationName = trim($conversationName);
+        if (empty($conversationName)) {
+            return [
+                'success' => false,
+                'error' => 'Conversation name cannot be empty.',
+            ];
+        }
+
+        try {
+            // Step 1: Create conversation
+            $createResult = $this->createRoom($conversationName);
+            
+            if (!$createResult['success']) {
+                return $createResult;
+            }
+
+            $token = $createResult['token'];
+            $roomId = $createResult['roomId'];
+
+            // Step 2: Add external user (local to that server)
+            $addExternalUserResult = $this->addParticipant($token, $externalUserId, 'users');
+            
+            // Step 3: Add current user (federated)
+            $addCurrentUserResult = $this->addParticipant($token, $currentUserFederatedId, 'federated');
+
+            // Generate the link
+            $externalUrl = $this->settingsService->getExternalUrl();
+            $link = rtrim($externalUrl, '/') . '/call/' . $token;
+
+            return [
+                'success' => true,
+                'link' => $link,
+                'token' => $token,
+                'roomId' => $roomId,
+                'conversationName' => $conversationName,
+                'externalUserAdded' => $addExternalUserResult['success'] ?? false,
+                'currentUserAdded' => $addCurrentUserResult['success'] ?? false,
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create external conversation', [
+                'app' => 'create_external_conversation',
+                'exception' => $e,
+                'conversationName' => $conversationName,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to create conversation: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Create a new room on external server
+     */
+    private function createRoom(string $roomName): array {
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
+
+        $data = [
+            'roomType' => 2, // Group conversation
+            'roomName' => $roomName,
+        ];
+
+        $response = $this->makeRequest('POST', $url, $data);
+
+        if (!isset($response['ocs']['data']['token'])) {
+            return [
+                'success' => false,
+                'error' => 'Failed to create room: ' . ($response['error'] ?? 'Unknown error'),
+            ];
+        }
+
+        return [
+            'success' => true,
+            'token' => $response['ocs']['data']['token'],
+            'roomId' => $response['ocs']['data']['id'] ?? null,
+        ];
+    }
+
+    /**
+     * Add participant to room
+     */
+    private function addParticipant(string $token, string $participantId, string $source = 'users'): array {
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants';
+
+        $data = [
+            'newParticipant' => $participantId,
+            'source' => $source,
+        ];
+
+        try {
+            $response = $this->makeRequest('POST', $url, $data);
+            
+            return [
+                'success' => true,
+                'participant' => $participantId,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to add participant', [
+                'app' => 'create_external_conversation',
+                'participant' => $participantId,
+                'source' => $source,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Search for users on external server
+     */
+    public function searchUsers(string $search = ''): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'App is not configured.',
+            ];
+        }
+
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $url = rtrim($externalUrl, '/') . self::USERS_API_ENDPOINT;
+        
+        if (!empty($search)) {
+            $url .= '?search=' . urlencode($search);
+        }
+
+        try {
+            $response = $this->makeRequest('GET', $url);
+            
+            $users = $response['ocs']['data']['users'] ?? [];
+            
+            return [
+                'success' => true,
+                'users' => $users,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to search users', [
+                'app' => 'create_external_conversation',
+                'exception' => $e,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to search users: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Make HTTP request to external server
+     */
+    private function makeRequest(string $method, string $url, array $data = []): array {
+        $username = $this->settingsService->getUsername();
+        $password = $this->settingsService->getPassword();
+
+        $client = $this->clientService->newClient();
+        
+        $options = [
+            'auth' => [$username, $password],
+            'headers' => [
+                'OCS-APIRequest' => 'true',
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ],
+        ];
+
+        if ($method === 'POST' && !empty($data)) {
+            $options['json'] = $data;
+        }
+
+        $response = $client->request($method, $url, $options);
+        $body = $response->getBody();
+        
+        return json_decode($body, true) ?? [];
+    }
+}
