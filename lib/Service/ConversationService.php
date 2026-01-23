@@ -57,8 +57,38 @@ class ConversationService {
             $token = $createResult['token'];
             $roomId = $createResult['roomId'];
 
-            // Note: Talk API doesn't support adding federated participants via API
-            // The room is public, so users can join via link as guests or logged-in users
+            // Step 2: Try to add current user as federated participant
+            // Try different source types to find what works
+            $participantAdded = false;
+            $addError = null;
+            
+            // Try 1: source=circles (for federated users)
+            $result = $this->addParticipant($token, $currentUserFederatedId, 'circles');
+            if ($result['success']) {
+                $participantAdded = true;
+            } else {
+                $addError = $result['error'] ?? 'Unknown error';
+                
+                // Try 2: source=remotes
+                $result = $this->addParticipant($token, $currentUserFederatedId, 'remotes');
+                if ($result['success']) {
+                    $participantAdded = true;
+                } else {
+                    // Try 3: source=emails (maybe it accepts email format)
+                    $result = $this->addParticipant($token, $currentUserFederatedId, 'emails');
+                    if ($result['success']) {
+                        $participantAdded = true;
+                    }
+                }
+            }
+            
+            if (!$participantAdded) {
+                $this->logger->warning('Could not add federated participant - none of the source types worked', [
+                    'app' => 'create_external_conversation',
+                    'federatedId' => $currentUserFederatedId,
+                    'lastError' => $addError,
+                ]);
+            }
 
             // Generate the link
             $externalUrl = $this->settingsService->getExternalUrl();
@@ -70,6 +100,7 @@ class ConversationService {
                 'token' => $token,
                 'roomId' => $roomId,
                 'conversationName' => $conversationName,
+                'participantAdded' => $participantAdded,
             ];
 
         } catch (\Exception $e) {
