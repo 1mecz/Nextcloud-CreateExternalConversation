@@ -3,59 +3,57 @@ declare(strict_types=1);
 
 namespace OCA\CreateExternalConversation\Controller;
 
-use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\CreateExternalConversation\AppInfo\Application;
 use OCA\CreateExternalConversation\Service\ConversationService;
 use OCA\CreateExternalConversation\Service\SettingsService;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\DataResponse;
+use OCP\AppFramework\OCSController;
+use OCP\IRequest;
+use OCP\IUserSession;
 
-class ApiController extends Controller {
-    private $userSession;
-    private $conversationService;
-    private $settingsService;
-
+/**
+ * OCS API Controller for Create External Conversation
+ */
+class ApiController extends OCSController {
     public function __construct(
-        string $appName,
         IRequest $request,
-        IUserSession $userSession,
-        ConversationService $conversationService,
-        SettingsService $settingsService
+        private ConversationService $conversationService,
+        private SettingsService $settingsService,
+        private IUserSession $userSession
     ) {
-        parent::__construct($appName, $request);
-        $this->userSession = $userSession;
-        $this->conversationService = $conversationService;
-        $this->settingsService = $settingsService;
+        parent::__construct(Application::APP_ID, $request);
     }
 
     /**
-     * @NoAdminRequired
+     * Create a conversation on the external server
      */
-    public function createConversation(string $conversationName = '', string $federatedUserId = ''): JSONResponse {
+    #[NoAdminRequired]
+    public function createConversation(string $conversationName = '', string $federatedUserId = ''): DataResponse {
         $conversationName = trim($conversationName);
         $federatedUserId = trim($federatedUserId);
 
         if (empty($conversationName)) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'Conversation name is required.'
-            ], 400);
+            return new DataResponse(
+                ['error' => 'Conversation name is required'],
+                Http::STATUS_BAD_REQUEST
+            );
         }
 
         if (empty($federatedUserId)) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'User ID is required.'
-            ], 400);
+            return new DataResponse(
+                ['error' => 'User ID is required'],
+                Http::STATUS_BAD_REQUEST
+            );
         }
 
         $currentUser = $this->userSession->getUser();
         if ($currentUser === null) {
-            return new JSONResponse([
-                'success' => false,
-                'error' => 'User not logged in'
-            ], 401);
+            return new DataResponse(
+                ['error' => 'User not logged in'],
+                Http::STATUS_UNAUTHORIZED
+            );
         }
 
         // Get current user's federated cloud ID
@@ -68,24 +66,64 @@ class ApiController extends Controller {
         );
 
         if (!$result['success']) {
-            return new JSONResponse($result, 500);
+            return new DataResponse(
+                ['error' => $result['error'] ?? 'Failed to create conversation'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }
 
-        return new JSONResponse($result);
+        return new DataResponse([
+            'success' => true,
+            'link' => $result['link'],
+            'token' => $result['token'],
+            'conversationName' => $conversationName
+        ]);
     }
 
     /**
-     * @NoAdminRequired
+     * Search for users on the external server
      */
-    public function getExternalUsers(string $search = ''): JSONResponse {
+    #[NoAdminRequired]
+    public function searchUsers(string $search = ''): DataResponse {
         $result = $this->conversationService->searchUsers($search);
 
         if (!$result['success']) {
-            return new JSONResponse($result, 500);
+            return new DataResponse(
+                ['error' => $result['error'] ?? 'Failed to search users'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }
 
-        return new JSONResponse([
+        return new DataResponse([
+            'success' => true,
             'users' => $result['users']
+        ]);
+    }
+
+    /**
+     * Test connection to the external server
+     */
+    #[NoAdminRequired]
+    public function testConnection(): DataResponse {
+        if (!$this->settingsService->isConfigured()) {
+            return new DataResponse(
+                ['error' => 'App is not configured. Please configure in admin settings.'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $result = $this->conversationService->testConnection();
+
+        if (!$result['success']) {
+            return new DataResponse(
+                ['error' => $result['error'] ?? 'Connection test failed'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return new DataResponse([
+            'success' => true,
+            'message' => 'Connection successful'
         ]);
     }
 }

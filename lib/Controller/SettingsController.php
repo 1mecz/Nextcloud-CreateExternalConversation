@@ -3,36 +3,83 @@ declare(strict_types=1);
 
 namespace OCA\CreateExternalConversation\Controller;
 
-use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\JSONResponse;
-use OCP\IRequest;
+use OCA\CreateExternalConversation\AppInfo\Application;
 use OCA\CreateExternalConversation\Service\SettingsService;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IRequest;
 
+/**
+ * Controller for admin settings
+ */
 class SettingsController extends Controller {
-    private $settingsService;
-
     public function __construct(
-        string $appName,
         IRequest $request,
-        SettingsService $settingsService
+        private SettingsService $settingsService
     ) {
-        parent::__construct($appName, $request);
-        $this->settingsService = $settingsService;
+        parent::__construct(Application::APP_ID, $request);
     }
 
     /**
-     * @NoCSRFRequired
+     * Show the settings page
      */
-    public function setConfig(): JSONResponse {
-        $external_url = $this->request->getParam('external_url', '');
-        $external_username = $this->request->getParam('external_username', '');
-        $external_password = $this->request->getParam('external_password', '');
-        
-        $this->settingsService->saveAllSettings($external_url, $external_username, $external_password);
+    #[AuthorizedAdminSetting(settings: \OCA\CreateExternalConversation\Settings\AdminSettings::class)]
+    public function index(): TemplateResponse {
+        return new TemplateResponse(
+            Application::APP_ID,
+            'settings',
+            [
+                'settings' => $this->settingsService->getAllSettings(),
+            ]
+        );
+    }
+
+    /**
+     * Save settings
+     */
+    #[AuthorizedAdminSetting(settings: \OCA\CreateExternalConversation\Settings\AdminSettings::class)]
+    public function save(): JSONResponse {
+        $externalServerUrl = $this->request->getParam('externalServerUrl', '');
+        $username = $this->request->getParam('username', '');
+        $password = $this->request->getParam('password', null);
+
+        // Validate required fields
+        if (empty($externalServerUrl)) {
+            return new JSONResponse(
+                ['error' => 'External server URL is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        if (empty($username)) {
+            return new JSONResponse(
+                ['error' => 'Username is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        // Validate URL
+        if (!filter_var('https://' . ltrim($externalServerUrl, 'https://'), FILTER_VALIDATE_URL)) {
+            return new JSONResponse(
+                ['error' => 'Invalid external server URL format'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        // Save settings
+        $this->settingsService->saveAllSettings(
+            $externalServerUrl,
+            $username,
+            $password
+        );
 
         return new JSONResponse([
-            'status' => 'success',
-            'data' => $this->settingsService->getAllSettings()
+            'success' => true,
+            'message' => 'Settings saved successfully',
+            'settings' => $this->settingsService->getAllSettings()
         ]);
     }
 }

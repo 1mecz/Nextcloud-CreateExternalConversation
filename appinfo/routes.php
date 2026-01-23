@@ -1,10 +1,42 @@
 <?php
+
 declare(strict_types=1);
 
 return [
     'routes' => [
-        ['name' => 'Api#createConversation', 'url' => '/api/v1/conversation', 'verb' => 'POST'],
-        ['name' => 'Api#getExternalUsers', 'url' => '/api/v1/users', 'verb' => 'GET'],
-        ['name' => 'Settings#setConfig', 'url' => '/settings', 'verb' => 'POST'],
-    ]
+        // Admin settings page
+        [
+            'name' => 'settings#index',
+            'url' => '/settings',
+            'verb' => 'GET',
+        ],
+        [
+            'name' => 'settings#save',
+            'url' => '/settings',
+            'verb' => 'POST',
+        ],
+    ],
+
+    'ocs' => [
+        // OCS API endpoint to create conversation
+        [
+            'name' => 'api#createConversation',
+            'url' => '/api/v1/conversation',
+            'verb' => 'POST',
+        ],
+
+        // OCS API endpoint to search users
+        [
+            'name' => 'api#searchUsers',
+            'url' => '/api/v1/users',
+            'verb' => 'GET',
+        ],
+
+        // OCS API endpoint to test connection
+        [
+            'name' => 'api#testConnection',
+            'url' => '/api/v1/test',
+            'verb' => 'GET',
+        ],
+    ],
 ];

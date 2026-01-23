@@ -3,26 +3,46 @@
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>create_external_conversation</id>
     <name>Create External Conversation</name>
-    <summary>Create conversations on external Nextcloud Talk instances</summary>
-    <description>
-        This app adds a button to Nextcloud Talk that allows you to create conversations
-        on external Nextcloud instances. It connects via API to create a conversation,
-        invite a federated user from the external instance, and add the current user.
-    </description>
+    <summary>Create new conversations on external Nextcloud Talk servers</summary>
+    <description><![CDATA[
+# Create External Conversation
+
+This app allows you to create new conversations on external Nextcloud Talk servers.
+
+## Features
+
+- Create conversations on external Nextcloud Talk servers
+- Automatically invite selected users from the external server
+- Add yourself via federation to join the conversation
+- Admin settings to configure external server credentials
+- Integration with Nextcloud Talk
+
+## Configuration
+
+1. Go to Admin Settings → External Conversation
+2. Configure the external server URL
+3. Add authentication credentials (username and password)
+
+## Usage
+
+Once configured, users can create conversations on the external server by providing a conversation name and selecting a user to invite.
+    ]]></description>
     <version>1.0.0</version>
     <licence>agpl</licence>
-    <author>Tomas</author>
+    <author mail="admin@example.com">Tomas</author>
     <namespace>CreateExternalConversation</namespace>
+    <category>integration</category>
     <category>social</category>
-    <bugs>https://github.com/yourusername/create_external_conversation/issues</bugs>
+    <bugs>https://github.com/1mecz/Nextcloud-CreateExternalConversation/issues</bugs>
+    <repository type="git">https://github.com/1mecz/Nextcloud-CreateExternalConversation.git</repository>
     
     <dependencies>
-        <nextcloud min-version="25" max-version="30"/>
-        <php min-version="7.4" max-version="8.3"/>
+        <nextcloud min-version="27" max-version="30"/>
+        <php min-version="8.1" max-version="8.3"/>
     </dependencies>
     
     <settings>
-        <admin>OCA\CreateExternalConversation\Settings\Admin</admin>
+        <admin>OCA\CreateExternalConversation\Settings\AdminSettings</admin>
         <admin-section>OCA\CreateExternalConversation\Settings\AdminSection</admin-section>
     </settings>
 </info>

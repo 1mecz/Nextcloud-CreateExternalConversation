@@ -196,6 +196,48 @@ class ConversationService {
     }
 
     /**
+     * Test connection to external server
+     */
+    public function testConnection(): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'App is not configured.',
+            ];
+        }
+
+        try {
+            // Test by fetching rooms endpoint
+            $externalUrl = $this->settingsService->getExternalUrl();
+            $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
+            
+            $response = $this->makeRequest('GET', $url);
+            
+            if (isset($response['ocs']['meta']['status']) && $response['ocs']['meta']['status'] === 'ok') {
+                return [
+                    'success' => true,
+                    'message' => 'Connection successful',
+                ];
+            }
+            
+            return [
+                'success' => false,
+                'error' => 'Unexpected response from server',
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Connection test failed', [
+                'app' => 'create_external_conversation',
+                'exception' => $e,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Connection failed: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Make HTTP request to external server
      */
     private function makeRequest(string $method, string $url, array $data = []): array {

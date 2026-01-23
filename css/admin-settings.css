@@ -1,0 +1,35 @@
+/* Admin settings styles */
+#create-external-conversation-admin-settings .section {
+    margin-bottom: 20px;
+}
+
+#create-external-conversation-admin-settings h2 {
+    margin-top: 0;
+}
+
+#create-external-conversation-admin-settings .settings-hint {
+    color: #888;
+    margin-bottom: 20px;
+}
+
+#create-external-conversation-admin-settings .settings-form p {
+    margin: 15px 0;
+}
+
+#create-external-conversation-admin-settings label {
+    display: inline-block;
+    width: 150px;
+    font-weight: bold;
+}
+
+#create-external-conversation-admin-settings input[type="text"],
+#create-external-conversation-admin-settings input[type="password"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+#create-external-conversation-admin-settings button {
+    padding: 8px 16px;
+    cursor: pointer;
+}

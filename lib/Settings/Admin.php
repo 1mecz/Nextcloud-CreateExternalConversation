@@ -3,29 +3,36 @@ declare(strict_types=1);
 
 namespace OCA\CreateExternalConversation\Settings;
 
+use OCA\CreateExternalConversation\AppInfo\Application;
+use OCA\CreateExternalConversation\Service\SettingsService;
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IConfig;
+use OCP\AppFramework\Services\IInitialState;
 use OCP\Settings\ISettings;
 
-class Admin implements ISettings {
-    private $config;
-
-    public function __construct(IConfig $config) {
-        $this->config = $config;
+class AdminSettings implements ISettings {
+    public function __construct(
+        private SettingsService $settingsService,
+        private IInitialState $initialState
+    ) {
     }
 
     public function getForm(): TemplateResponse {
-        $parameters = [
-            'external_url' => $this->config->getAppValue('create_external_conversation', 'external_url', ''),
-            'external_username' => $this->config->getAppValue('create_external_conversation', 'external_username', ''),
-            'external_password' => $this->config->getAppValue('create_external_conversation', 'external_password', ''),
-        ];
+        // Provide initial state to the frontend
+        $this->initialState->provideInitialState(
+            'admin-settings',
+            $this->settingsService->getAllSettings()
+        );
 
-        return new TemplateResponse('create_external_conversation', 'settings/admin', $parameters, '');
+        return new TemplateResponse(
+            Application::APP_ID,
+            'admin-settings',
+            [],
+            ''
+        );
     }
 
     public function getSection(): string {
-        return 'create_external_conversation';
+        return Application::APP_ID;
     }
 
     public function getPriority(): int {
