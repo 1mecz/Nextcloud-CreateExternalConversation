@@ -18,6 +18,19 @@ class ApiController extends OCSController {
     }
 
     /**
+     * Simple ping route (non-OCS) to verify routing
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function ping(): DataResponse {
+        return new DataResponse([
+            'success' => true,
+            'message' => 'Ping works',
+        ]);
+    }
+
+    /**
      * Test connection to the external server
      * 
      * @NoAdminRequired

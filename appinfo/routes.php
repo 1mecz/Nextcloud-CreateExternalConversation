@@ -15,6 +15,13 @@ return [
             'url' => '/settings',
             'verb' => 'POST',
         ],
+
+        // Simple ping endpoint (web route) to verify routing works
+        [
+            'name' => 'api#ping',
+            'url' => '/ping',
+            'verb' => 'GET',
+        ],
     ],
 
     'ocs' => [
