@@ -118,25 +118,9 @@ class ApiController extends OCSController {
      * @NoCSRFRequired
      */
     public function testConnection(): DataResponse {
-        if (!$this->settingsService->isConfigured()) {
-            return new DataResponse(
-                ['error' => 'App is not configured. Please configure in admin settings.'],
-                Http::STATUS_BAD_REQUEST
-            );
-        }
-
-        $result = $this->conversationService->testConnection();
-
-        if (!$result['success']) {
-            return new DataResponse(
-                ['error' => $result['error'] ?? 'Connection test failed'],
-                Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-
         return new DataResponse([
             'success' => true,
-            'message' => 'Connection successful'
+            'message' => 'API endpoint is working'
         ]);
     }
 }
