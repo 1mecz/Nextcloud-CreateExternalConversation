@@ -57,40 +57,18 @@ class ConversationService {
             $token = $createResult['token'];
             $roomId = $createResult['roomId'];
 
-            // Step 2: Try to add current user as federated participant
-            // Talk API may require federation invitation endpoint
+            // Step 2: Add current user as federated participant
+            // Use 'invite' parameter with 'source=search' for federated users
             $participantAdded = false;
-            $addError = null;
             
-            // Try using federation endpoint (if it exists)
-            try {
-                $federationResult = $this->inviteFederatedUser($token, $currentUserFederatedId);
-                if ($federationResult['success']) {
-                    $participantAdded = true;
-                }
-            } catch (\Exception $e) {
-                $this->logger->info('Federation invite endpoint not available or failed', [
-                    'app' => 'create_external_conversation',
-                    'error' => $e->getMessage(),
-                ]);
-            }
-            
-            // Fallback: Try standard participant endpoint with different formats
-            if (!$participantAdded) {
-                // Try format: federated_user/username@server
-                $result = $this->addParticipant($token, 'federated_user/' . $currentUserFederatedId, 'users');
-                if ($result['success']) {
-                    $participantAdded = true;
-                } else {
-                    $addError = $result['error'] ?? 'Unknown error';
-                }
-            }
-            
-            if (!$participantAdded) {
+            $result = $this->addFederatedParticipant($token, $currentUserFederatedId);
+            if ($result['success']) {
+                $participantAdded = true;
+            } else {
                 $this->logger->warning('Could not add federated participant automatically', [
                     'app' => 'create_external_conversation',
                     'federatedId' => $currentUserFederatedId,
-                    'lastError' => $addError,
+                    'error' => $result['error'] ?? 'Unknown error',
                     'note' => 'User can still join via public link',
                 ]);
             }
@@ -169,7 +147,47 @@ class ConversationService {
     }
 
     /**
-     * Add participant to room
+     * Add federated participant to room using invite+search method
+     */
+    private function addFederatedParticipant(string $token, string $federatedId): array {
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants';
+
+        // Use 'invite' parameter with 'source=search' for federated users
+        $data = [
+            'invite' => $federatedId,  // username@domain.com format
+            'source' => 'search',       // Tells Nextcloud to resolve federated ID
+        ];
+
+        try {
+            $response = $this->makeRequest('POST', $url, $data, true);  // true = form data
+            
+            $this->logger->info('Add federated participant response', [
+                'app' => 'create_external_conversation',
+                'federatedId' => $federatedId,
+                'response' => $response,
+            ]);
+            
+            return [
+                'success' => true,
+                'participant' => $federatedId,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to add federated participant', [
+                'app' => 'create_external_conversation',
+                'federatedId' => $federatedId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Add participant to room (for local users)
      */
     private function addParticipant(string $token, string $participantId, string $source = 'users'): array {
         $externalUrl = $this->settingsService->getExternalUrl();
@@ -207,35 +225,6 @@ class ConversationService {
                 'success' => false,
                 'error' => $e->getMessage(),
             ];
-        }
-    }
-
-    /**
-     * Invite federated user using federation endpoint
-     */
-    private function inviteFederatedUser(string $token, string $federatedId): array {
-        $externalUrl = $this->settingsService->getExternalUrl();
-        // Try federation/invites endpoint
-        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/federation/invites';
-
-        $data = [
-            'cloudId' => $federatedId,
-        ];
-
-        try {
-            $response = $this->makeRequest('POST', $url, $data, true);
-            
-            $this->logger->info('Federation invite response', [
-                'app' => 'create_external_conversation',
-                'federatedId' => $federatedId,
-                'response' => $response,
-            ]);
-            
-            return [
-                'success' => true,
-            ];
-        } catch (\Exception $e) {
-            throw $e;  // Re-throw to be caught by caller
         }
     }
 
