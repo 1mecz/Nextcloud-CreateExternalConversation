@@ -136,7 +136,7 @@ class ConversationService {
         $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token;
 
         $data = [
-            'allowGuests' => 'yes',
+            'allowGuests' => 1,  // Use integer 1 instead of 'yes'
         ];
 
         $this->makeRequest('PUT', $url, $data);
@@ -147,11 +147,11 @@ class ConversationService {
      */
     private function addParticipant(string $token, string $participantId, string $source = 'users'): array {
         $externalUrl = $this->settingsService->getExternalUrl();
-        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants';
+        // source is a query parameter, not in body
+        $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants?source=' . urlencode($source);
 
         $data = [
             'newParticipant' => $participantId,
-            'source' => $source,
         ];
 
         try {
