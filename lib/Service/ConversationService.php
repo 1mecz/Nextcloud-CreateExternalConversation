@@ -99,7 +99,7 @@ class ConversationService {
             'roomName' => $roomName,
         ];
 
-        $response = $this->makeRequest('POST', $url, $data);
+        $response = $this->makeRequest('POST', $url, $data, true);  // true = form data
 
         if (!isset($response['ocs']['data']['token'])) {
             return [
@@ -136,10 +136,10 @@ class ConversationService {
         $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token;
 
         $data = [
-            'allowGuests' => 1,  // Use integer 1 instead of 'yes'
+            'allowGuests' => 'yes',  // Talk API expects 'yes' string
         ];
 
-        $this->makeRequest('PUT', $url, $data);
+        $this->makeRequest('PUT', $url, $data, true);  // true = form data
     }
 
     /**
@@ -155,7 +155,7 @@ class ConversationService {
         ];
 
         try {
-            $response = $this->makeRequest('POST', $url, $data);
+            $response = $this->makeRequest('POST', $url, $data, true);  // true = form data
             
             $this->logger->info('Add participant response', [
                 'app' => 'create_external_conversation',
@@ -266,8 +266,13 @@ class ConversationService {
 
     /**
      * Make HTTP request to external server
+     * 
+     * @param string $method HTTP method
+     * @param string $url Full URL
+     * @param array $data Request data
+     * @param bool $useFormData Whether to send as form data (default: false = JSON)
      */
-    private function makeRequest(string $method, string $url, array $data = []): array {
+    private function makeRequest(string $method, string $url, array $data = [], bool $useFormData = false): array {
         $username = $this->settingsService->getUsername();
         $password = $this->settingsService->getPassword();
 
@@ -278,12 +283,19 @@ class ConversationService {
             'headers' => [
                 'OCS-APIRequest' => 'true',
                 'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
             ],
         ];
 
-        if ($method === 'POST' && !empty($data)) {
-            $options['json'] = $data;
+        if (!empty($data)) {
+            if ($useFormData) {
+                // Send as form data (application/x-www-form-urlencoded)
+                $options['form_params'] = $data;
+                $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+            } else {
+                // Send as JSON
+                $options['json'] = $data;
+                $options['headers']['Content-Type'] = 'application/json';
+            }
         }
 
         $response = $client->request($method, $url, $options);
