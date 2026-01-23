@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>create_external_conversation</id>
+    <name>Create External Conversation</name>
+    <summary>Create conversations on external Nextcloud Talk instances</summary>
+    <description>
+        This app adds a button to Nextcloud Talk that allows you to create conversations
+        on external Nextcloud instances. It connects via API to create a conversation,
+        invite a federated user from the external instance, and add the current user.
+    </description>
+    <version>1.0.0</version>
+    <licence>agpl</licence>
+    <author>Tomas</author>
+    <namespace>CreateExternalConversation</namespace>
+    <category>social</category>
+    <bugs>https://github.com/yourusername/create_external_conversation/issues</bugs>
+    
+    <dependencies>
+        <nextcloud min-version="25" max-version="30"/>
+        <php min-version="7.4" max-version="8.3"/>
+    </dependencies>
+    
+    <settings>
+        <personal>OCA\CreateExternalConversation\Settings\Personal</personal>
+    </settings>
+</info>

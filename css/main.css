@@ -1,0 +1,162 @@
+/* Styles for Create External Conversation app */
+
+/* Button in Talk sidebar */
+.external-conversation-button {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #0082c9;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.external-conversation-button:hover {
+    background-color: #006aa3;
+}
+
+.external-conversation-button .icon-external {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-size: 16px;
+}
+
+/* Dialog styles */
+#external-conversation-dialog {
+    padding: 20px;
+    min-width: 400px;
+}
+
+#external-conversation-dialog h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+#external-conversation-dialog .form-group {
+    margin-bottom: 15px;
+}
+
+#external-conversation-dialog label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#external-conversation-dialog input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+#external-conversation-dialog input[type="text"]:focus {
+    outline: none;
+    border-color: #0082c9;
+}
+
+/* User search results */
+#user-results {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-top: 5px;
+}
+
+#user-results .user-result {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+#user-results .user-result:last-child {
+    border-bottom: none;
+}
+
+#user-results .user-result:hover {
+    background-color: #f5f5f5;
+}
+
+#user-results .no-results {
+    padding: 10px;
+    color: #999;
+    text-align: center;
+}
+
+/* Selected user display */
+#selected-user {
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+/* Dialog actions */
+.dialog-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.dialog-actions button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.dialog-actions button.primary {
+    background-color: #0082c9;
+    color: white;
+}
+
+.dialog-actions button.primary:hover:not(:disabled) {
+    background-color: #006aa3;
+}
+
+.dialog-actions button.primary:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.dialog-actions button:not(.primary) {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.dialog-actions button:not(.primary):hover {
+    background-color: #e0e0e0;
+}
+
+/* Messages */
+#dialog-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 3px;
+}
+
+#dialog-message .success {
+    color: #28a745;
+    font-weight: bold;
+}
+
+#dialog-message .error {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+#dialog-message .icon-loading-small {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+}

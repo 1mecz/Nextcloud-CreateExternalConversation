@@ -1,0 +1,19 @@
+{
+    "name": "create_external_conversation",
+    "description": "Nextcloud app to create conversations on external Talk instances",
+    "type": "project",
+    "license": "AGPL-3.0",
+    "authors": [
+        {
+            "name": "Tomas"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "OCA\\CreateExternalConversation\\": "lib/"
+        }
+    }
+}

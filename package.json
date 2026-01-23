@@ -1,0 +1,24 @@
+{
+    "name": "create_external_conversation",
+    "version": "1.0.0",
+    "description": "Nextcloud app to create conversations on external Talk instances",
+    "main": "js/main.js",
+    "scripts": {
+        "dev": "echo 'No build step required'",
+        "build": "echo 'No build step required'"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourusername/create_external_conversation.git"
+    },
+    "keywords": [
+        "nextcloud",
+        "talk",
+        "external",
+        "conversation",
+        "federated"
+    ],
+    "author": "Tomas",
+    "license": "AGPL-3.0",
+    "dependencies": {}
+}
