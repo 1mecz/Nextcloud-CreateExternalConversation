@@ -207,9 +207,15 @@
                 display: inline-block;
                 width: 16px;
                 height: 16px;
-                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="white" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>');
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>');
                 background-size: contain;
                 background-repeat: no-repeat;
+                filter: invert(0);
+                color: inherit;
+            }
+
+            .create-external-conversation-dashboard-btn.dark-theme .icon {
+                filter: invert(1) brightness(0.2);
             }
 
             .create-external-conversation-button-container {
@@ -240,7 +246,7 @@
                 width: 16px;
                 height: 16px;
                 margin-right: 8px;
-                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="white" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>');
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>');
                 background-size: contain;
                 background-repeat: no-repeat;
             }
