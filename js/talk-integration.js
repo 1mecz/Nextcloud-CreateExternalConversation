@@ -144,7 +144,7 @@
         const federatedId = userId + '@' + serverName;
 
         // Make request to create conversation
-        fetch(OC.generateUrl('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json'), {
+        fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
