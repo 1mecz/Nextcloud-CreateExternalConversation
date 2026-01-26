@@ -16,55 +16,44 @@
     function initTalkIntegration() {
         console.log('[CreateExternalConversation] Initializing Talk integration');
 
-        // Add button to Talk sidebar
-        addTalkSidebarButton();
+        // Try to add button to Talk dashboard
+        addButtonToDashboard();
+        
+        // Also try sidebar button as fallback
+        setTimeout(() => addTalkSidebarButton(), 1000);
     }
 
-    function addTalkSidebarButton() {
-        // Look for the "New conversation" button in Talk sidebar
-        const sidebarContainer = document.querySelector('[data-testid="talk-sidebar"]') 
-            || document.querySelector('.talk-sidebar')
-            || document.querySelector('#talk-sidebar');
+    function addButtonToDashboard() {
+        // Look for talk-dashboard__actions container
+        const dashboardActions = document.querySelector('.talk-dashboard__actions');
 
-        if (!sidebarContainer) {
-            console.log('[CreateExternalConversation] Talk sidebar not found, retrying...');
-            setTimeout(addTalkSidebarButton, 500);
+        if (!dashboardActions) {
+            console.log('[CreateExternalConversation] Dashboard actions not found yet, retrying...');
+            setTimeout(addButtonToDashboard, 500);
             return;
         }
 
-        // Create button container
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'create-external-conversation-button-container';
-        buttonContainer.innerHTML = `
-            <button class="create-external-conversation-btn" title="Create external conversation">
-                <span class="icon icon-add"></span>
-                <span class="text">Create external conversation</span>
-            </button>
-        `;
+        console.log('[CreateExternalConversation] Found dashboard actions');
 
         // Add styles
         addStyles();
 
-        // Find parent of new conversation button
-        const newConvButton = sidebarContainer.querySelector('[data-testid="new-conversation"]')
-            || sidebarContainer.querySelector('[title*="New conversation"]')
-            || sidebarContainer.querySelector('.button-new-conversation');
+        // Create button
+        const button = document.createElement('button');
+        button.className = 'create-external-conversation-dashboard-btn talk-dashboard-btn';
+        button.type = 'button';
+        button.innerHTML = `
+            <span class="icon icon-add"></span>
+            <span class="text">Create external conversation</span>
+        `;
 
-        if (newConvButton) {
-            newConvButton.parentNode.insertAdjacentElement('afterend', buttonContainer);
-        } else {
-            // Fallback: add at top of sidebar
-            const sidebarButtons = sidebarContainer.querySelector('.talk-sidebar__buttons');
-            if (sidebarButtons) {
-                sidebarButtons.appendChild(buttonContainer);
-            }
-        }
+        // Add click handler
+        button.addEventListener('click', showCreateConversationModal);
 
-        // Add event listener
-        const btn = buttonContainer.querySelector('.create-external-conversation-btn');
-        if (btn) {
-            btn.addEventListener('click', showCreateConversationModal);
-        }
+        // Add to dashboard actions
+        dashboardActions.appendChild(button);
+        
+        console.log('[CreateExternalConversation] Button added to dashboard');
     }
 
     function showCreateConversationModal() {
@@ -194,6 +183,34 @@
         const style = document.createElement('style');
         style.id = 'create-external-conversation-styles';
         style.textContent = `
+            .create-external-conversation-dashboard-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background-color: var(--color-primary, #0082c9);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: background-color 0.2s;
+            }
+
+            .create-external-conversation-dashboard-btn:hover {
+                background-color: var(--color-primary-hover, #006ba3);
+            }
+
+            .create-external-conversation-dashboard-btn .icon {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>');
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+
             .create-external-conversation-button-container {
                 padding: 5px 0;
             }
