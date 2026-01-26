@@ -58,7 +58,6 @@ class ConversationService {
             $roomId = $createResult['roomId'];
 
             // Step 2: Add current user as federated participant
-            // Use 'invite' parameter with 'source=search' for federated users
             $participantAdded = false;
             
             $result = $this->addFederatedParticipant($token, $currentUserFederatedId);
@@ -147,16 +146,16 @@ class ConversationService {
     }
 
     /**
-     * Add federated participant to room using invite+search method
+     * Add federated participant to room
      */
     private function addFederatedParticipant(string $token, string $federatedId): array {
         $externalUrl = $this->settingsService->getExternalUrl();
         $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants';
 
-        // Use 'invite' parameter with 'source=search' for federated users
+        // Use 'source=federated_users' for federated participants
         $data = [
-            'invite' => $federatedId,  // username@domain.com format
-            'source' => 'search',       // Tells Nextcloud to resolve federated ID
+            'newParticipant' => $federatedId,  // username@domain.com format
+            'source' => 'federated_users',     // Correct source type for federated users
         ];
 
         try {
