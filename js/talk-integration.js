@@ -44,7 +44,9 @@
         button.type = 'button';
         button.title = 'Create a conversation on external Nextcloud server';
         button.innerHTML = `
-            <span class="icon icon-external"></span>
+            <svg class="material-design-icon__svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+            </svg>
             <span class="text">External conversation</span>
         `;
 
@@ -203,19 +205,13 @@
                 background-color: var(--color-primary-hover, #006ba3);
             }
 
-            .create-external-conversation-dashboard-btn .icon {
+            .create-external-conversation-dashboard-btn .material-design-icon__svg {
                 display: inline-block;
-                width: 16px;
-                height: 16px;
-                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                filter: invert(0);
-                color: inherit;
-            }
-
-            .create-external-conversation-dashboard-btn.dark-theme .icon {
-                filter: invert(1) brightness(0.2);
+                width: 20px;
+                height: 20px;
+                vertical-align: middle;
+                margin-right: 8px;
+                fill: currentColor;
             }
 
             .create-external-conversation-button-container {
@@ -241,14 +237,12 @@
                 background-color: var(--color-primary-hover, #006ba3);
             }
 
-            .create-external-conversation-btn .icon {
+            .create-external-conversation-btn .material-design-icon__svg {
                 display: inline-block;
-                width: 16px;
-                height: 16px;
+                width: 20px;
+                height: 20px;
                 margin-right: 8px;
-                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>');
-                background-size: contain;
-                background-repeat: no-repeat;
+                fill: currentColor;
             }
 
             .create-external-conversation-modal {
