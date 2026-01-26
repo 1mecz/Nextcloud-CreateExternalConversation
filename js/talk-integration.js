@@ -163,6 +163,9 @@
                 resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
                 modal.querySelector('#result-link').value = data.ocs.data.link;
+
+                // Try to refresh Talk conversations without full page reload
+                refreshTalkList();
             } else {
                 throw new Error(data.ocs.data.error || 'Unknown error');
             }
@@ -172,6 +175,25 @@
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
         });
+    }
+
+    function refreshTalkList() {
+        try {
+            // Preferred: refresh existing Talk collections if available
+            if (window.OCA?.Talk?.Collections?.conversations?.fetch) {
+                window.OCA.Talk.Collections.conversations.fetch({ reset: true });
+                return;
+            }
+            if (window.OCA?.Talk?.conversations?.fetch) {
+                window.OCA.Talk.conversations.fetch({ reset: true });
+                return;
+            }
+        } catch (e) {
+            console.warn('[CreateExternalConversation] refreshTalkList error:', e);
+        }
+
+        // Fallback: soft reload after short delay so user sees the new room
+        setTimeout(() => window.location.reload(), 800);
     }
 
     function addStyles() {
