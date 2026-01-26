@@ -16,11 +16,8 @@
     function initTalkIntegration() {
         console.log('[CreateExternalConversation] Initializing Talk integration');
 
-        // Try to add button to Talk dashboard
+        // Add button to Talk dashboard
         addButtonToDashboard();
-        
-        // Also try sidebar button as fallback
-        setTimeout(() => addTalkSidebarButton(), 1000);
     }
 
     function addButtonToDashboard() {
