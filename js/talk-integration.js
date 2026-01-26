@@ -37,7 +37,7 @@
 
         // Create button
         const button = document.createElement('button');
-        button.className = 'create-external-conversation-dashboard-btn talk-dashboard-btn';
+        button.className = 'create-external-conversation-dashboard-btn talk-dashboard-btn button-vue button-vue--size-normal button-vue--secondary';
         button.type = 'button';
         button.title = 'Create a conversation on external Nextcloud server';
         button.innerHTML = `
