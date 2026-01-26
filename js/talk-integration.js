@@ -50,8 +50,18 @@
         // Add click handler
         button.addEventListener('click', showCreateConversationModal);
 
-        // Add to dashboard actions
-        dashboardActions.appendChild(button);
+        // Add to dashboard actions - position it as 3rd button (after first 2)
+        const existingButtons = dashboardActions.querySelectorAll('button');
+        if (existingButtons.length >= 2) {
+            // Insert after second button
+            existingButtons[1].insertAdjacentElement('afterend', button);
+        } else if (existingButtons.length === 1) {
+            // If only one button exists, insert after it
+            existingButtons[0].insertAdjacentElement('afterend', button);
+        } else {
+            // Otherwise just append at end
+            dashboardActions.appendChild(button);
+        }
         
         console.log('[CreateExternalConversation] Button added to dashboard');
     }
