@@ -50,20 +50,17 @@
         // Add click handler
         button.addEventListener('click', showCreateConversationModal);
 
-        // Add to dashboard actions - position it as 3rd button (after first 2)
-        const existingButtons = dashboardActions.querySelectorAll('button');
-        if (existingButtons.length >= 2) {
-            // Insert after second button
-            existingButtons[1].insertAdjacentElement('afterend', button);
-        } else if (existingButtons.length === 1) {
-            // If only one button exists, insert after it
-            existingButtons[0].insertAdjacentElement('afterend', button);
+        // Add to dashboard actions - insert as 3rd element (after first 2)
+        const children = Array.from(dashboardActions.children);
+        if (children.length >= 2) {
+            // Insert before 3rd child (at index 2)
+            dashboardActions.insertBefore(button, children[2]);
         } else {
             // Otherwise just append at end
             dashboardActions.appendChild(button);
         }
         
-        console.log('[CreateExternalConversation] Button added to dashboard');
+        console.log('[CreateExternalConversation] Button added to dashboard at position ' + (dashboardActions.children.length - 1));
     }
 
     function showCreateConversationModal() {
