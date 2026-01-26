@@ -42,9 +42,10 @@
         const button = document.createElement('button');
         button.className = 'create-external-conversation-dashboard-btn talk-dashboard-btn';
         button.type = 'button';
+        button.title = 'Create a conversation on external Nextcloud server';
         button.innerHTML = `
-            <span class="icon icon-add"></span>
-            <span class="text">Create external conversation</span>
+            <span class="icon icon-external"></span>
+            <span class="text">External conversation</span>
         `;
 
         // Add click handler
@@ -206,7 +207,7 @@
                 display: inline-block;
                 width: 16px;
                 height: 16px;
-                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>');
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="white" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>');
                 background-size: contain;
                 background-repeat: no-repeat;
             }
@@ -239,7 +240,7 @@
                 width: 16px;
                 height: 16px;
                 margin-right: 8px;
-                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>');
+                background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="1.5"/><path d="M6 12h12M12 6c-2 0-3.5 4.5-3.5 6s1.5 6 3.5 6 3.5-4.5 3.5-6-1.5-6-3.5-6" stroke="white" stroke-width="1.5" fill="none"/><path d="M16.5 3l2.5 2.5M16.5 3l2.5-2.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>');
                 background-size: contain;
                 background-repeat: no-repeat;
             }
