@@ -29,19 +29,14 @@ class LoadTalkIntegrationListener implements IEventListener
             return;
         }
 
-        // Only load if the app is configured
-        if (!$this->settingsService->isConfigured()) {
-            return;
-        }
-
         // Check if we're on a Talk page
         $appId = $event->getResponse()->getApp();
         if ($appId !== 'spreed') {
             return;
         }
 
-        // Load our Talk integration script and styles
-        Util::addScript(Application::APP_ID, 'main');
-        Util::addStyle(Application::APP_ID, 'main');
+        // Load our Talk integration script
+        // This makes the "Create external conversation" button available to all users
+        Util::addScript(Application::APP_ID, 'talk-integration');
     }
 }
