@@ -39,7 +39,7 @@ sudo -u www-data php /var/www/nextcloud/occ app:enable create_external_conversat
 
 Pokud vidíte:
 - `Failed to load resource` → JS soubor se nenačte
-- `OCA.CreateExternalConversation is undefined` → Script se nenačetl správně
+- Chybějící `talk-integration.js` → Script se nenačetl správně
 
 ### 4. Ověřte že se JS načítá
 
@@ -47,7 +47,7 @@ V Developer Tools (F12):
 1. Záložka **Network**
 2. Obnovte stránku (F5)
 3. Filtr: **JS**
-4. Hledejte: `main.js` z `create_external_conversation`
+4. Hledejte: `talk-integration.js` z `create_external_conversation`
 
 Pokud soubor není v seznamu, script se nenačítá.
 
@@ -55,49 +55,53 @@ Pokud soubor není v seznamu, script se nenačítá.
 
 Tlačítko by mělo být:
 - **V Talk aplikaci** (ikona bubliny v horním menu)
-- **Vedle nebo pod** tlačítkem "New conversation" / "Nová konverzace"
-- Barva: **modrá**
+- **V dashboardu vedle** tlačítka "Create a new conversation"
+- **Ikona**: Glóbus (zeměkoule)
 - Text: **"Create External Conversation"**
+- Pozice: 3. tlačítko v řadě
 
-### 6. Ruční test JavaScript
+### 6. Ověřte konfiguraci
 
-V konzoli prohlížeče (F12 → Console) napište:
-```javascript
-OCA.CreateExternalConversation
-```
-
-Pokud vrátí `undefined`, script se nenačetl.
+Admin musí nejprve nakonfigurovat připojení:
+1. **Nastavení** → **Administrace** → **External Nextcloud Talk Server**
+2. Vyplnit URL, Username, Password
+3. Uložit a otestovat připojení
 
 ## Nevidím nastavení aplikace
 
-### Nastavení je v OSOBNÍM nastavení, ne admin!
+### Nastavení je v ADMIN nastavení!
 
-1. Klikněte na **avatar** (vpravo nahoře)
-2. **Nastavení** (Settings)
-3. V levém menu: **Další nastavení** (Additional)
-4. Scrollujte dolů na sekci **"Create External Conversation"**
-
-**NENÍ** to v:
-- ❌ Nastavení → Administrace
-- ❌ Aplikace → Create External Conversation
+1. Přihlaste se jako **správce**
+2. **Nastavení** (Settings) → **Administrace** (Administration)
+3. V levém menu: **External Nextcloud Talk Server**
+4. Vyplňte údaje k externímu serveru
 
 **JE** to v:
-- ✅ Nastavení → Osobní → Další nastavení
+- ✅ Nastavení → Administrace → External Nextcloud Talk Server
+
+**NENÍ** to v:
+- ❌ Nastavení → Osobní
+- ❌ Nastavení → Další nastavení
 
 ### Pokud tam sekci nevidíte
 
-Zkontrolujte že existuje soubor:
+Zkontrolujte že existují soubory:
 ```bash
-ls -la /var/www/nextcloud/apps/create_external_conversation/lib/Settings/Personal.php
+ls -la /var/www/nextcloud/apps/create_external_conversation/lib/Settings/AdminSettings.php
+ls -la /var/www/nextcloud/apps/create_external_conversation/lib/Settings/AdminSection.php
 ```
 
 A že je v `appinfo/info.xml`:
 ```bash
-grep -A 2 "<settings>" /var/www/nextcloud/apps/create_external_conversation/appinfo/info.xml
+grep -A 3 "<settings>" /var/www/nextcloud/apps/create_external_conversation/appinfo/info.xml
 ```
 
 Měli byste vidět:
 ```xml
+<settings>
+    <admin>OCA\CreateExternalConversation\Settings\AdminSettings</admin>
+    <admin-section>OCA\CreateExternalConversation\Settings\AdminSection</admin-section>
+</settings>
 <settings>
     <personal>OCA\CreateExternalConversation\Settings\Personal</personal>
 </settings>

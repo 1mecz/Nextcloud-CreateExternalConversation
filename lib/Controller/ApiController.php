@@ -99,7 +99,7 @@ class ApiController extends OCSController {
             );
         }
 
-        // Get current user's federated cloud ID (e.g., tomas@nextcloud.kara-uas.cz)
+        // Get current user's federated cloud ID (e.g., tomas@nextcloud.com
         $currentUserFederatedId = $currentUser->getUID() . '@' . $this->request->getServerHost();
 
         $result = $this->conversationService->createExternalConversation(

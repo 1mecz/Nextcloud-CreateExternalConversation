@@ -1,18 +1,28 @@
 # Create External Conversation
 
-Nextcloud aplikace pro vytváření konverzací na externím Nextcloud Talk.
+Nextcloud aplikace pro vytváření veřejných konverzací na externím Nextcloud Talk serveru přímo z Talk dashboardu.
 
 ## Funkce
 
-- Přidává tlačítko "Create External Conversation" vedle "Create a new conversation" v Talk
-- Připojuje se k externímu Nextcloudu přes API (používá token, ne admin účet)
-- Vytváří novou konverzaci na externím Nextcloudu
-- Zve federativního uživatele z externího Nextcloudu
-- Zve uživatele, který na tlačítko klikl
+- 🌐 Tlačítko "Create External Conversation" přímo v Talk dashboardu
+- ⚙️ Centrální konfigurace externího serveru (Admin Settings)
+- 👥 Vytváří veřejné konverzace s podporou přístupu hostů
+- 🔗 Generuje veřejný odkaz pro sdílení konverzace
+- 🔐 Bezpečná komunikace přes Basic Auth s dedikovaným uživatelem
 
 ## Instalace
 
-1. Zkopírujte složku `create_external_conversation` do složky `apps` ve vašem Nextcloudu:
+### Jednoduchý způsob
+
+```bash
+cd /path/to/nextcloud/apps
+git clone https://github.com/1mecz/Nextcloud-CreateExternalConversation.git create_external_conversation
+sudo -u www-data php /path/to/nextcloud/occ app:enable create_external_conversation
+```
+
+### Ruční instalace
+
+1. Zkopírujte složku do `apps`:
    ```bash
    cp -r create_external_conversation /path/to/nextcloud/apps/
    ```
@@ -22,84 +32,88 @@ Nextcloud aplikace pro vytváření konverzací na externím Nextcloud Talk.
    chown -R www-data:www-data /path/to/nextcloud/apps/create_external_conversation
    ```
 
-3. Aktivujte aplikaci v Nextcloud admin rozhraní nebo přes occ:
+3. Aktivujte aplikaci:
    ```bash
    sudo -u www-data php /path/to/nextcloud/occ app:enable create_external_conversation
    ```
 
 ## Konfigurace
 
-### Generování API tokenu na externím Nextcloudu
+### Příprava externího Nextcloud serveru
 
-1. Přihlaste se na externí Nextcloud
-2. Jděte do **Nastavení** → **Zabezpečení** → **Zařízení a relace**
-3. Vytvořte nový token aplikace (zadejte název, např. "External Conversation Creator")
-4. Zkopírujte vygenerovaný token
+1. Vytvořte dedikovaného uživatele na externím Nextcloudu (např. `guest_user`)
+2. Ujistěte se, že má právo vytvářet konverzace v Talk aplikaci
 
-### Nastavení v lokálním Nextcloudu
+### Nastavení v administraci
 
-1. Přihlaste se do svého Nextcloudu
-2. Jděte do **Nastavení** → **Osobní** → **Další nastavení**
-3. Najděte sekci "Create External Conversation"
-4. Vyplňte:
-   - **External Nextcloud URL**: URL externího Nextcloudu (např. `https://nextcloud.example.com`)
-   - **API Token**: Token, který jste vygenerovali na externím Nextcloudu
-5. Klikněte na **Uložit**
+1. Přihlaste se jako správce
+2. Jděte do **Nastavení** → **Administrace** → **External Nextcloud Talk Server**
+3. Vyplňte:
+   - **External Nextcloud URL**: URL externího serveru (např. `https://ext.example.com`)
+   - **Username**: Uživatelské jméno na externím serveru (např. `guest_user`)
+   - **Password**: Heslo k účtu
+4. Klikněte **Uložit**
+5. Klikněte **Test Connection** pro ověření připojení
 
 ## Použití
 
 1. Otevřete Talk aplikaci
-2. Klikněte na tlačítko **Create External Conversation**
-3. V dialogu vyplňte:
-   - **Conversation Name**: Název nové konverzace
-   - **Search External User**: Vyhledejte uživatele na externím Nextcloudu
-4. Vyberte uživatele ze seznamu výsledků
-5. Klikněte na **Create**
-
-Aplikace vytvoří konverzaci na externím Nextcloudu, pozve vybraného uživatele a pozve také vás (přes federaci). Po úspěšném vytvoření se automaticky otevře odkaz na novou konverzaci.
+2. V dashboardu vedle "Create a new conversation" najdete nové tlačítko s ikonou glóbusu
+3. Klikněte na **Create External Conversation**
+4. V modálním dialogu:
+   - Zadejte **Conversation Name** (název nové konverzace)
+   - Klikněte **Create**
+5. Po vytvoření se zobrazí:
+   - **Veřejný odkaz** - sdílitelný odkaz na konverzaci
+   - Tlačítko **Kopírovat odkaz**
+   - Tlačítko **Otevřít konverzaci**
 
 ## Technické detaily
 
-### API endpointy
+### API komunikace
 
-Aplikace používá následující Nextcloud Talk API endpointy:
+- **Ověřování**: Basic Auth (uživatelské jméno + heslo)
+- **Formát**: Form-data encoding
+- **OCS API**: Přímé cesty bez OC.generateUrl()
 
-- **Vytvoření konverzace**: `POST /ocs/v2.php/apps/spreed/api/v4/room`
-- **Přidání účastníka**: `POST /ocs/v2.php/apps/spreed/api/v4/room/{token}/participants`
-- **Vyhledání uživatelů**: `GET /ocs/v2.php/cloud/users?search={search}`
+### Endpointy
 
-### Federace
-
-Aplikace využívá Nextcloud federaci pro pozvání aktuálního uživatele zpět do konverzace. Federované ID je ve formátu: `username@hostname`
+- Vytvoření konverzace: `POST /ocs/v2.php/apps/spreed/api/v4/room`
+- Typ konverzace: `3` (veřejná, přístupná hostům)
 
 ### Bezpečnost
 
-- Používá se Bearer token autentizace
-- Token je uložen v uživatelském nastavení (ne v globálním)
-- Každý uživatel má vlastní konfiguraci
-- SSL/TLS je vyžadováno pro komunikaci s externím Nextcloudem
+- Přihlašovací údaje jsou uloženy v šifrované podobě
+- Komunikace je centralizovaná (všichni uživatelé používají stejný dedikovaný účet)
+- Vyžaduje HTTPS pro externí komunikaci
 
 ## Řešení problémů
 
+### Chyba "Connection failed"
+
+- Ověřte správnost URL (bez lomítka na konci)
+- Zkontrolujte dostupnost externího serveru
+- Ověřte správnost uživatelského jména a hesla
+- Ujistěte se, že je Talk aplikace instalovaná a aktivní na externím serveru
+
+### Tlačítko se nezobrazuje v Talk
+
+- Zkontrolujte, že je aplikace aktivovaná: `sudo -u www-data php occ app:enable create_external_conversation`
+- Vymažte cache prohlížeče (Ctrl+Shift+Delete)
+- Zkontrolujte JavaScript konzoli prohlížeče (F12) pro chyby
+- Pokud používáte proxy, ujistěte se, že neblokuje `/ocs/` cesty
+
 ### Nepodařilo se vytvořit konverzaci
 
-- Zkontrolujte, že je URL externího Nextcloudu správná
-- Ověřte, že je API token platný
-- Ujistěte se, že má token potřebná oprávnění
-- Zkontrolujte, že je na externím Nextcloudu nainstalována a aktivní aplikace Talk
+- Ověřte, že je dedikovaný uživatel na externím serveru aktivní
+- Zkontrolujte, že má uživatel práva v Talk aplikaci
+- Vyzkoušejte test connection v admin settings
 
-### Nepodařilo se přidat uživatele
+## Kompatibilita
 
-- Zkontrolujte, že uživatel existuje na externím Nextcloudu
-- Ověřte, že je federace povolena na obou instancích
-- Ujistěte se, že je správně nakonfigurován DNS a SSL certifikát
-
-### Tlačítko se nezobrazuje
-
-- Zkontrolujte, že je aplikace aktivovaná
-- Ověřte, že je v prohlížeči načten JavaScript
-- Zkuste vyčistit cache prohlížeče
-- Zkontrolujte konzoli prohlížeče pro JavaScript chyby
+- **Nextcloud**: 27.0 až 32.0
+- **PHP**: 8.1+
+- **Talk aplikace**: Povinná na externím serveru
 
 ## Licence
 

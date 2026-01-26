@@ -2,22 +2,22 @@
 
 ## Požadavky
 
-- Nextcloud 25 nebo novější
-- PHP 7.4 nebo novější
-- Nextcloud Talk nainstalovaný a aktivní na obou instancích (lokální i externí)
-- Federace povolena na obou instancích
+- Nextcloud 27 nebo novější (testováno až do 32)
+- PHP 8.1 nebo novější
+- Nextcloud Talk nainstalovaný a aktivní na externím Nextcloudu
 
 ## Instalace
 
-### Metoda 1: Pomocí instalačního skriptu
+### Instalace přes Git (doporučeno)
 
 ```bash
-cd /path/to/create_external_conversation
-chmod +x install.sh
-sudo ./install.sh /path/to/nextcloud
+cd /var/www/nextcloud/apps
+git clone https://github.com/1mecz/Nextcloud-CreateExternalConversation.git create_external_conversation
+sudo chown -R www-data:www-data create_external_conversation
+sudo -u www-data php /var/www/nextcloud/occ app:enable create_external_conversation
 ```
 
-### Metoda 2: Ruční instalace
+### Ruční instalace
 
 ```bash
 # Zkopírujte aplikaci do apps složky
@@ -32,72 +32,64 @@ sudo -u www-data php /var/www/nextcloud/occ app:enable create_external_conversat
 
 ## Konfigurace externího Nextcloudu
 
-Na **externím Nextcloudu**, kde chcete vytvářet konverzace:
+Na **externím Nextcloudu**, kde budou vytvářeny konverzace:
 
-### 1. Vygenerujte API token
+### 1. Vytvořte dedikovaného uživatele
 
-1. Přihlaste se jako uživatel, který bude vytvářet konverzace
-2. Jděte do **Nastavení** (ikona ozubeného kola v horním pravém rohu)
-3. V levém menu vyberte **Zabezpečení**
-4. Scrollujte dolů na sekci **Zařízení a relace**
-5. V poli "Název aplikace" zadejte například: `External Conversation Creator`
-6. Klikněte na **Vytvořit nový token aplikace**
-7. **DŮLEŽITÉ**: Zkopírujte zobrazený token - už ho neuvidíte!
+1. Vytvořte nový uživatel účet (např. `guest_user` nebo `conversation_creator`)
+2. Přihlaste se jako tento uživatel
+3. Otevřete Talk a ověřte, že může vytvářet konverzace
+4. Tento uživatel bude použit pro API přístup
 
-### 2. Ověřte, že je povolena federace
-
-1. Jděte do **Nastavení** → **Administrace** → **Sdílení**
-2. Ujistěte se, že je zaškrtnuto:
-   - **Povolit uživatelům sdílení prostřednictvím federovaného cloudového ID**
-   - **Povolit uživatelům přidávání vzdálených sdílených položek**
-
-### 3. Ověřte Talk API
+### 2. Ověřte Talk API
 
 Můžete otestovat, že Talk API funguje:
 
 ```bash
-curl -H "OCS-APIRequest: true" \
-     -H "Authorization: Bearer YOUR_TOKEN" \
+curl -u "username:password" \
+     -H "OCS-APIRequest: true" \
      -H "Accept: application/json" \
      https://external-nextcloud.com/ocs/v2.php/apps/spreed/api/v4/room
 ```
 
 ## Konfigurace lokálního Nextcloudu
 
-Na **lokálním Nextcloudu**, odkud chcete vytvářet externí konverzace:
+Na **lokálním Nextcloudu**, odkud budete vytvářet externí konverzace:
 
-### 1. Nastavte připojení k externímu Nextcloudu
+### 1. Nastavte připojení k externímu Nextcloudu (jako admin)
 
-1. Přihlaste se
-2. Jděte do **Nastavení** → **Osobní**
-3. Scrollujte dolů na sekci **Create External Conversation**
-4. Vyplňte:
+1. Přihlaste se jako **správce**
+2. Jděte do **Nastavení** → **Administrace** → **External Nextcloud Talk Server**
+3. Vyplňte:
    - **External Nextcloud URL**: 
      - Formát: `https://external-nextcloud.com`
      - **Bez** koncového lomítka
      - Musí začínat `https://`
-   - **API Token**: 
-     - Token, který jste vygenerovali na externím Nextcloudu
-5. Klikněte na **Uložit**
+   - **Username**: 
+     - Uživatelské jméno dedikovaného účtu na externím Nextcloudu
+   - **Password**: 
+     - Heslo k tomuto účtu (ukládá se šifrované)
+4. Klikněte na **Uložit**
+5. Klikněte na **Test Connection** pro ověření připojení
 
 ### 2. Testování konfigurace
 
-Po uložení nastavení:
-
-1. Otevřete **Talk** aplikaci
-2. Mělo by se zobrazit modré tlačítko **Create External Conversation**
+1. Otevřete **Talk** aplikaci (jako jakýkoli uživatel)
+2. V dashboardu vedle "Create a new conversation" uvidíte nové tlačítko s ikonou glóbusu
 3. Klikněte na něj
-4. Zkuste vyhledat uživatele - pokud funguje vyhledávání, konfigurace je správná
+4. Zadejte název konverzace
+5. Po vytvoření dostanete veřejný odkaz
 
 ## Použití
 
 ### Vytvoření externí konverzace
 
 1. **Otevřete Talk**
-2. **Klikněte na "Create External Conversation"**
-3. **Vyplňte formulář:**
+2. **Klikněte na tlačítko s glóbusem** (vedle "Create a new conversation")
+3. **Vyplňte dialog:**
    - **Conversation Name**: Zadejte název konverzace (např. "Meeting s týmem")
-   - **Search External User**: Začněte psát jméno uživatele z externího Nextcloudu
+4. **Klikněte Create**
+5. **Zkopírujte veřejný odkaz** a sdílejte ho s kýmkoli
 4. **Vyberte uživatele** ze seznamu výsledků
 5. **Klikněte na "Create"**
 

@@ -14,8 +14,8 @@ sudo -u www-data php occ app:list | grep create_external_conversation
 ## ✅ 2. Existují všechny soubory?
 
 ```bash
-ls -la apps/create_external_conversation/js/main.js
-ls -la apps/create_external_conversation/css/main.css
+ls -la apps/create_external_conversation/js/talk-integration.js
+ls -la apps/create_external_conversation/js/admin-settings.js
 ```
 
 Oba by měly existovat.
@@ -33,20 +33,25 @@ sudo systemctl restart apache2  # nebo nginx
 2. **Obnovte**: Ctrl + F5 (hard refresh)
 3. **Otevřete Talk**
 
-## ✅ 5. Kde hledat nastavení?
+## ✅ 5. Kde hledat nastavení? (ADMIN POUZE)
 
-1. Klikněte na **avatar** (pravý horní roh)
-2. **Nastavení**
-3. V levém menu: **Další nastavení** (nebo "Additional")
-4. Scrollujte dolů → sekce **"Create External Conversation"**
+1. Přihlaste se jako **správce**
+2. Jděte do **Nastavení** → **Administrace**
+3. V levém menu najděte: **External Nextcloud Talk Server**
+4. Vyplňte:
+   - External Nextcloud URL
+   - Username
+   - Password
+5. **Uložte** a klikněte **Test Connection**
 
-**NENÍ v admin nastavení!** Je to v **osobním nastavení**.
+**JE v admin nastavení!** Není to v osobním nastavení.
 
-## ✅ 6. Kde hledat tlačítko?
+## ✅ 6. Kde hledat tlačítko? (VŠICHNI UŽIVATELÉ)
 
 1. Otevřete **Talk** (ikona bubliny v horním menu)
-2. Hledejte **modré tlačítko** s textem "Create External Conversation"
-3. Mělo by být v levém panelu, kde jsou konverzace
+2. V dashboardu vedle tlačítka "Create a new conversation" hledejte **tlačítko s ikonou glóbusu**
+3. Text tlačítka: **"Create External Conversation"**
+4. Pozice: 3. tlačítko v dashboard actions
 
 ## 🔧 Pokud tlačítko nevidíte
 

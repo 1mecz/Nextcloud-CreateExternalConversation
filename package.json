@@ -1,7 +1,7 @@
 {
     "name": "create_external_conversation",
     "version": "1.0.0",
-    "description": "Nextcloud app to create conversations on external Talk instances",
+    "description": "Nextcloud app to create public conversations on external Talk servers from the Talk dashboard",
     "main": "js/main.js",
     "scripts": {
         "dev": "echo 'No build step required'",
@@ -9,7 +9,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/yourusername/create_external_conversation.git"
+        "url": "https://github.com/1mecz/Nextcloud-CreateExternalConversation.git"
     },
     "keywords": [
         "nextcloud",
