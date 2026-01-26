@@ -4,7 +4,7 @@ Nextcloud aplikace pro vytváření veřejných konverzací na externím Nextclo
 
 ## Funkce
 
-- 🌐 Tlačítko "Create External Conversation" přímo v Talk dashboardu
+- 🌐 Tlačítko "External conversation" přímo v Talk dashboardu
 - ⚙️ Centrální konfigurace externího serveru (Admin Settings)
 - 👥 Vytváří veřejné konverzace s podporou přístupu hostů
 - 🔗 Generuje veřejný odkaz pro sdílení konverzace
@@ -59,7 +59,7 @@ sudo -u www-data php /path/to/nextcloud/occ app:enable create_external_conversat
 
 1. Otevřete Talk aplikaci
 2. V dashboardu vedle "Create a new conversation" najdete nové tlačítko s ikonou glóbusu
-3. Klikněte na **Create External Conversation**
+3. Klikněte na **External conversation**
 4. V modálním dialogu:
    - Zadejte **Conversation Name** (název nové konverzace)
    - Klikněte **Create**

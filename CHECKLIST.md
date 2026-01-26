@@ -50,7 +50,7 @@ sudo systemctl restart apache2  # nebo nginx
 
 1. Otevřete **Talk** (ikona bubliny v horním menu)
 2. V dashboardu vedle tlačítka "Create a new conversation" hledejte **tlačítko s ikonou glóbusu**
-3. Text tlačítka: **"Create External Conversation"**
+3. Text tlačítka: **"External conversation"**
 4. Pozice: 3. tlačítko v dashboard actions
 
 ## 🔧 Pokud tlačítko nevidíte

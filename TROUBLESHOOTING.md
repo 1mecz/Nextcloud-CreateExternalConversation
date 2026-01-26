@@ -57,7 +57,7 @@ Tlačítko by mělo být:
 - **V Talk aplikaci** (ikona bubliny v horním menu)
 - **V dashboardu vedle** tlačítka "Create a new conversation"
 - **Ikona**: Glóbus (zeměkoule)
-- Text: **"Create External Conversation"**
+- Text: **"External conversation"**
 - Pozice: 3. tlačítko v řadě
 
 ### 6. Ověřte konfiguraci
