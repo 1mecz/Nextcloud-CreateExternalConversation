@@ -279,13 +279,12 @@
     }
 
     function fetchExternalTokenFromAPI(localToken, callback) {
-        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(localToken)}/external-token?format=json`;
+        const url = `/apps/create_external_conversation/api/v1/external-token/${encodeURIComponent(localToken)}`;
         console.log('[CreateExternalConversation] Fetching external token from API:', url);
 
         fetch(url, {
             method: 'GET',
             headers: {
-                'OCS-APIRequest': 'true',
                 'requesttoken': OC.requestToken,
             },
         })
@@ -313,8 +312,8 @@
         })
         .then(data => {
             console.log('[CreateExternalConversation] External token API response data:', data);
-            if (data && data.ocs && data.ocs.meta && data.ocs.meta.statuscode === 200 && data.ocs.data && data.ocs.data.success && data.ocs.data.externalToken) {
-                const externalToken = data.ocs.data.externalToken;
+            if (data && data.success && data.externalToken) {
+                const externalToken = data.externalToken;
                 console.log('[CreateExternalConversation] Got external token:', externalToken);
                 
                 // Store it in localStorage for future use
@@ -330,7 +329,7 @@
                 
                 callback(externalToken);
             } else {
-                const error = data && data.ocs && data.ocs.data ? data.ocs.data.error : 'Unknown error';
+                const error = data ? data.error : 'Unknown error';
                 console.log('[CreateExternalConversation] Failed to get external token:', error);
                 callback(null);
             }

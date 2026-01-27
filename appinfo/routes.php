@@ -29,6 +29,13 @@ return [
             'url' => '/ping',
             'verb' => 'GET',
         ],
+
+        // Web endpoint to get external token (direct JSON, not OCS)
+        [
+            'name' => 'api#getExternalTokenWeb',
+            'url' => '/api/v1/external-token/{token}',
+            'verb' => 'GET',
+        ],
     ],
 
     'ocs' => [
