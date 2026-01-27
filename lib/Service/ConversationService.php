@@ -407,7 +407,7 @@ class ConversationService {
 
         try {
             $response = $client->request($method, $url, $options);
-            $body = $response->getBody();
+            $body = $response->getBody()->getContents();
             $decoded = json_decode($body, true);
             
             if ($decoded === null && !empty($body)) {
@@ -571,7 +571,7 @@ class ConversationService {
                 ],
             ]);
 
-            $body = $response->getBody();
+            $body = $response->getBody()->getContents();
             $data = json_decode($body, true) ?? [];
 
             $this->logger->debug('Local room response:', [
@@ -624,7 +624,7 @@ class ConversationService {
                 ],
             ]);
 
-            $body = $response->getBody();
+            $body = $response->getBody()->getContents();
             $data = json_decode($body, true) ?? [];
 
             $rooms = $data['ocs']['data'] ?? [];
@@ -695,7 +695,7 @@ class ConversationService {
                 ],
             ]);
 
-            $body = $response->getBody();
+            $body = $response->getBody()->getContents();
             $data = json_decode($body, true) ?? [];
 
             $rooms = $data['ocs']['data'] ?? [];
@@ -784,7 +784,7 @@ class ConversationService {
                 ],
             ]);
 
-            $body = $response->getBody();
+            $body = $response->getBody()->getContents();
             $data = json_decode($body, true) ?? [];
 
             $statusCode = $data['ocs']['meta']['statuscode'] ?? null;
@@ -819,3 +819,4 @@ class ConversationService {
             ];
         }
     }
+}
