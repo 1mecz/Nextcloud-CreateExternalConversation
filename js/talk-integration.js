@@ -45,17 +45,13 @@
             // Find action buttons container (right side of top-bar)
             const actionsContainer = topBar.querySelector('[class*="call-button"]') || topBar.lastElementChild;
             
-            // Create button with proper icon
+            // Create button with text
             const button = document.createElement('button');
             button.className = 'add-external-participant-btn';
             button.type = 'button';
             button.title = 'Add participant';
             button.setAttribute('aria-label', 'Add participant');
-            button.innerHTML = `
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon">
-                    <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 4c-2.33 0-7 1.17-7 3.5V19h14v-1.5c0-2.33-4.67-3.5-7-3.5zm9 0c-.29 0-.62.02-.97.05 1.16.64 1.7 1.73 1.7 2.45V19h6v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
-                </svg>
-            `;
+            button.textContent = '+ Add';
 
             button.addEventListener('click', showAddParticipantModal);
             
@@ -894,10 +890,20 @@
                 opacity: 0.5;
             }
 
-            .add-external-participant-btn .icon {
-                width: 20px;
-                height: 20px;
-                fill: currentColor;
+            .add-external-participant-btn {
+                display: inline-block;
+                padding: 8px 12px;
+                background: none;
+                border: none;
+                color: var(--color-text, #333);
+                cursor: pointer;
+                font-size: 13px;
+                transition: opacity 0.2s;
+                margin-left: 8px;
+            }
+
+            .add-external-participant-btn:hover {
+                opacity: 0.7;
             }
         `;
 
