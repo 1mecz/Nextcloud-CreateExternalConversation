@@ -216,7 +216,7 @@
 
         const serverHost = window.location.hostname;
 
-        // Try core OCS user search first (always available): /ocs/v2.php/cloud/users
+        // Try core OCS user search first (provisioning API): /ocs/v2.php/cloud/users
         fetch(`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&format=json`, {
             credentials: 'same-origin',
             headers: {
@@ -230,13 +230,28 @@
             return response.json();
         })
         .then(data => {
-            if (data?.ocs?.meta?.statuscode === 200 && Array.isArray(data?.ocs?.data?.users)) {
-                const users = data.ocs.data.users
-                    .map(u => ({
-                        id: u.id,
-                        displayName: u.displayname || u.id,
-                        federatedId: `${u.id}@${serverHost}`,
-                    }))
+            const statusCode = data?.ocs?.meta?.statuscode;
+            const statusText = data?.ocs?.meta?.status;
+            const rawUsers = data?.ocs?.data?.users;
+
+            if ((statusCode === 100 || statusCode === 200 || statusText === 'ok') && Array.isArray(rawUsers)) {
+                // provisioning_api returns array of IDs
+                const users = rawUsers
+                    .map(u => {
+                        if (typeof u === 'string') {
+                            return {
+                                id: u,
+                                displayName: u,
+                                federatedId: `${u}@${serverHost}`,
+                            };
+                        }
+                        // If object with id/displayname
+                        return {
+                            id: u.id,
+                            displayName: u.displayname || u.id,
+                            federatedId: `${u.id}@${serverHost}`,
+                        };
+                    })
                     .filter(u => u.id && u.id !== OC.currentUser);
 
                 displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
