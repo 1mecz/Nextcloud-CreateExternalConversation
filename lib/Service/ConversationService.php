@@ -710,4 +710,85 @@ class ConversationService {
         }
     }
 
+    /**
+     * Add federated participant to external conversation
+     * Uses guest credentials from settings to connect to external server
+     *
+     * @param string $externalToken Token of room on external server
+     * @param string $federatedId Federated user ID (user@domain)
+     * @return array Success status and message
+     */
+    public function addFederatedParticipantAsGuest(string $externalToken, string $federatedId): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'External server not configured',
+            ];
+        }
+
+        $settings = $this->settingsService->getSettings();
+        $externalUrl = $settings['external_url'] ?? '';
+        $guestUser = $settings['external_user'] ?? '';
+        $guestPassword = $settings['external_password'] ?? '';
+
+        if (empty($externalUrl) || empty($guestUser) || empty($guestPassword)) {
+            return [
+                'success' => false,
+                'error' => 'Guest credentials not configured',
+            ];
+        }
+
+        try {
+            $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $externalToken . '/participants';
+
+            $client = $this->clientService->newClient();
+            $response = $client->request('POST', $url, [
+                'auth' => [$guestUser, $guestPassword],
+                'form_params' => [
+                    'newParticipant' => $federatedId,
+                    'source' => 'federated_users',
+                ],
+                'headers' => [
+                    'OCS-APIRequest' => 'true',
+                    'Accept' => 'application/json',
+                ],
+            ]);
+
+            $body = $response->getBody();
+            $data = json_decode($body, true) ?? [];
+
+            $statusCode = $data['ocs']['meta']['statuscode'] ?? null;
+            if ($statusCode === 200) {
+                $this->logger->info('Added federated participant to external conversation', [
+                    'app' => 'create_external_conversation',
+                    'token' => $externalToken,
+                    'federatedId' => $federatedId,
+                ]);
+
+                return [
+                    'success' => true,
+                ];
+            } else {
+                $message = $data['ocs']['meta']['message'] ?? 'Unknown error';
+                return [
+                    'success' => false,
+                    'error' => 'Talk API error: ' . $message . ' (status: ' . $statusCode . ')',
+                ];
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Error adding federated participant to external conversation', [
+                'app' => 'create_external_conversation',
+                'token' => $externalToken,
+                'federatedId' => $federatedId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+
 ```

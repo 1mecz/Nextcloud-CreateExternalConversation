@@ -252,14 +252,14 @@
             return;
         }
 
-        // Fetch local conversation name then get external room link
-        fetchConversationAndGetExternalToken(localToken, (token) => {
-            if (token) {
-                modal.querySelector('#result-container').style.display = 'block';
-                modal.querySelector('#added-participant').textContent = 'Token: ' + token;
+        // Fetch local conversation and get remote token
+        fetchConversationAndGetExternalToken(localToken, (remoteToken) => {
+            if (remoteToken) {
+                console.log('[CreateExternalConversation] Got remote token, adding participant to external conversation');
+                addParticipantToExternalConversation(modal, federatedId, remoteToken);
             } else {
                 modal.querySelector('#error-container').style.display = 'block';
-                modal.querySelector('#error-message').textContent = 'Could not find matching room on external server. Please check the conversation name.';
+                modal.querySelector('#error-message').textContent = 'Could not find remote token for this conversation.';
             }
         });
     }
@@ -302,9 +302,9 @@
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
 
-        // Use external token instead of local token
-        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/participants?format=json`;
-        console.log('[CreateExternalConversation] Calling:', url);
+        // Call backend API to add participant via guest user
+        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/add-federated?format=json`;
+        console.log('[CreateExternalConversation] Adding participant to external conversation:', url);
 
         // Prepare form data
         const formData = new FormData();
@@ -321,41 +321,20 @@
         })
         .then(response => {
             console.log('[CreateExternalConversation] Response status:', response.status);
-            console.log('[CreateExternalConversation] Response headers:', response.headers.get('content-type'));
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                console.error('[CreateExternalConversation] Invalid content type:', contentType);
-                return response.text().then(text => {
-                    console.error('[CreateExternalConversation] Response text:', text);
-                    throw new Error(`Invalid content type: ${contentType}. Response: ${text.substring(0, 200)}`);
-                });
             }
             
             return response.json();
         })
         .then(data => {
             console.log('[CreateExternalConversation] Response data:', data);
-            if (data && data.ocs && data.ocs.meta && data.ocs.meta.statuscode === 200 && data.ocs.data && data.ocs.data.success) {
+            if (data && data.ocs && data.ocs.data && data.ocs.data.success) {
                 form.style.display = 'none';
                 resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
                 modal.querySelector('#added-participant').textContent = federatedId;
-
-                // Store external token in localStorage for future use
-                const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
-                if (!externalTokens[externalToken]) {
-                    externalTokens[externalToken] = {
-                        token: externalToken,
-                        createdAt: new Date().toISOString(),
-                    };
-                    localStorage.setItem('externalConversationTokens', JSON.stringify(externalTokens));
-                    console.log('[CreateExternalConversation] Stored external token:', externalToken);
-                }
 
                 // Close modal after 2 seconds
                 setTimeout(() => modal.remove(), 2000);

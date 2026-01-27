@@ -388,4 +388,58 @@ class ApiController extends OCSController {
             );
         }
     }
+
+    /**
+     * Add federated participant to external conversation
+     * Connects to external server using guest credentials from settings
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function addFederatedParticipant(string $token = ''): DataResponse {
+        $token = trim($token);
+
+        if (empty($token)) {
+            return new DataResponse(
+                ['error' => 'Token is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        // Extract federatedId from request body (supports FormData)
+        $federatedId = trim($this->request->getParam('federatedId', ''));
+
+        if (empty($federatedId)) {
+            return new DataResponse(
+                ['error' => 'Federated ID is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        try {
+            $result = $this->conversationService->addFederatedParticipantAsGuest($token, $federatedId);
+
+            if (!$result['success']) {
+                return new DataResponse(
+                    ['error' => $result['error'] ?? 'Failed to add participant'],
+                    Http::STATUS_INTERNAL_SERVER_ERROR
+                );
+            }
+
+            return new DataResponse([
+                'success' => true,
+                'message' => 'Participant added successfully',
+                'federatedId' => $federatedId,
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error adding federated participant', [
+                'exception' => $e->getMessage()
+            ]);
+
+            return new DataResponse(
+                ['error' => 'Failed to add participant'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }
