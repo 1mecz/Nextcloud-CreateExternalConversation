@@ -217,7 +217,8 @@
         const serverHost = window.location.hostname;
 
         // 1) Try sharees search (works for běžné uživatele)
-        fetch(`/ocs/v2.php/apps/files_sharing/api/v1/sharees?format=json&search=${encodeURIComponent(query)}&perPage=30`, {
+        // Sharees API (works for běžné uživatele); itemType required to avoid 400
+        fetch(`/ocs/v2.php/apps/files_sharing/api/v1/sharees?format=json&search=${encodeURIComponent(query)}&perPage=30&itemType=folder&lookup=true`, {
             credentials: 'same-origin',
             headers: {
                 'OCS-APIRequest': 'true',
