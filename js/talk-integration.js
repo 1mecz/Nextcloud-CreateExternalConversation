@@ -302,11 +302,11 @@
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
 
-        // Call backend API to add participant via guest user
-        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/add-federated?format=json`;
+        // Call existing endpoint that handles adding participants
+        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/participants?format=json`;
         console.log('[CreateExternalConversation] Adding participant to external conversation:', url);
 
-        // Prepare form data
+        // Prepare form data (same as when creating conversation)
         const formData = new FormData();
         formData.append('federatedId', federatedId);
 

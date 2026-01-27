@@ -164,6 +164,11 @@ class ConversationService {
         $externalUrl = $this->settingsService->getExternalUrl();
         $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT . '/' . $token . '/participants';
 
+        // Use guest credentials to connect to external server
+        $settings = $this->settingsService->getSettings();
+        $guestUser = $settings['external_user'] ?? '';
+        $guestPassword = $settings['external_password'] ?? '';
+
         // Use 'source=federated_users' for federated participants
         $data = [
             'newParticipant' => $federatedId,  // username@domain.com format
@@ -171,19 +176,29 @@ class ConversationService {
         ];
 
         try {
-            $response = $this->makeRequest('POST', $url, $data, true);  // true = form data
+            $client = $this->clientService->newClient();
+            $response = $client->request('POST', $url, [
+                'auth' => [$guestUser, $guestPassword],
+                'form_params' => $data,
+                'headers' => [
+                    'OCS-APIRequest' => 'true',
+                    'Accept' => 'application/json',
+                ],
+            ]);
+
+            $body = $response->getBody();
+            $responseData = json_decode($body, true) ?? [];
             
             // Check if response indicates success
-            $statuscode = $response['ocs']['meta']['statuscode'] ?? null;
+            $statuscode = $responseData['ocs']['meta']['statuscode'] ?? null;
             if ($statuscode !== 200) {
-                $message = $response['ocs']['meta']['message'] ?? 'Unknown error';
+                $message = $responseData['ocs']['meta']['message'] ?? 'Unknown error';
                 throw new \Exception('Talk API error: ' . $message . ' (status: ' . $statuscode . ')');
             }
             
             $this->logger->info('Add federated participant response', [
                 'app' => 'create_external_conversation',
                 'federatedId' => $federatedId,
-                'response' => $response,
             ]);
             
             return [

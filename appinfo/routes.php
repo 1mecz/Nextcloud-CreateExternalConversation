@@ -87,12 +87,5 @@ return [
             'url' => '/api/v1/room-link',
             'verb' => 'GET',
         ],
-
-        // OCS API endpoint to add federated participant to external conversation
-        [
-            'name' => 'api#addFederatedParticipant',
-            'url' => '/api/v1/conversation/{token}/add-federated',
-            'verb' => 'POST',
-        ],
     ],
 ];

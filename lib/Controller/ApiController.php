@@ -392,6 +392,9 @@ class ApiController extends OCSController {
     /**
      * Add federated participant to external conversation
      * Connects to external server using guest credentials from settings
+    /**
+     * Add federated participant to external conversation
+     * Connects to external server using guest credentials from settings
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -417,7 +420,7 @@ class ApiController extends OCSController {
         }
 
         try {
-            $result = $this->conversationService->addFederatedParticipantAsGuest($token, $federatedId);
+            $result = $this->conversationService->addParticipantToConversation($token, $federatedId);
 
             if (!$result['success']) {
                 return new DataResponse(
