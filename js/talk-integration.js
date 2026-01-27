@@ -87,17 +87,6 @@
     }
 
     function showAddParticipantModal() {
-        // Get current conversation token from Talk
-        const token = getConversationToken();
-
-        if (!token) {
-            console.error('[CreateExternalConversation] Could not find conversation token');
-            alert('Could not find conversation token. Please reload the page.');
-            return;
-        }
-
-        console.log('[CreateExternalConversation] Opening add participant modal for token:', token);
-
         // Create modal
         const modal = document.createElement('div');
         modal.className = 'create-external-conversation-modal';
@@ -174,11 +163,20 @@
                 return;
             }
             const participant = Array.from(selectedParticipants)[0];
-            handleAddParticipant(modal, token, participant);
+            handleAddParticipant(modal, participant);
         });
     }
 
-    function handleAddParticipant(modal, token, federatedId) {
+    function handleAddParticipant(modal, federatedId) {
+        // Get token at the time of adding (might have loaded by now)
+        const token = getConversationToken();
+
+        if (!token) {
+            modal.querySelector('#error-container').style.display = 'block';
+            modal.querySelector('#error-message').textContent = 'Error: Could not find conversation token. Please reload the page.';
+            return;
+        }
+
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
