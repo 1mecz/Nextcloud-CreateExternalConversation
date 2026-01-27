@@ -235,15 +235,19 @@
             throw new Error('ocs-invalid');
         })
         .catch(() => {
-            // Fallback to non-OCS route
-            fetch(`/apps/create_external_conversation/local-users?search=${encodeURIComponent(query)}&format=json`, {
+            // Fallback to non-OCS route (handles index.php if needed via OC.generateUrl)
+            const localUrl = OC.generateUrl('/apps/create_external_conversation/local-users') + `?search=${encodeURIComponent(query)}&format=json`;
+            fetch(localUrl, {
                 credentials: 'same-origin',
                 headers: {
                     'Accept': 'application/json',
                     'requesttoken': OC.requestToken,
                 },
             })
-            .then(resp => resp.json())
+            .then(resp => {
+                if (!resp.ok) throw new Error('fallback-http');
+                return resp.json();
+            })
             .then(data => {
                 if (data?.users) {
                     displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
