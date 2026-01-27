@@ -253,17 +253,26 @@
         }
 
         // Try to find external token from localStorage
+        let externalToken = null;
         const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
-        const externalToken = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
+        externalToken = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
 
+        // If not found in localStorage, prompt user to enter external conversation ID
         if (!externalToken) {
-            modal.querySelector('#error-container').style.display = 'block';
-            modal.querySelector('#error-message').textContent = 'Error: Could not find external conversation token. This conversation may not be an external conversation.';
+            showExternalTokenModal((token) => {
+                if (token) {
+                    // Retry with provided token
+                    addParticipantToExternalConversation(modal, federatedId, token);
+                }
+            });
             return;
         }
 
         console.log('[CreateExternalConversation] handleAddParticipant - localToken:', localToken, 'externalToken:', externalToken, 'federatedId:', federatedId);
+        addParticipantToExternalConversation(modal, federatedId, externalToken);
+    }
 
+    function addParticipantToExternalConversation(modal, federatedId, externalToken) {
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
@@ -297,6 +306,17 @@
                 errorContainer.style.display = 'none';
                 modal.querySelector('#added-participant').textContent = federatedId;
 
+                // Store external token in localStorage for future use
+                const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                if (!externalTokens[externalToken]) {
+                    externalTokens[externalToken] = {
+                        token: externalToken,
+                        createdAt: new Date().toISOString(),
+                    };
+                    localStorage.setItem('externalConversationTokens', JSON.stringify(externalTokens));
+                    console.log('[CreateExternalConversation] Stored external token:', externalToken);
+                }
+
                 // Close modal after 2 seconds
                 setTimeout(() => modal.remove(), 2000);
             } else {
@@ -308,6 +328,107 @@
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
         });
+    }
+
+    function showExternalTokenModal(callback) {
+        const modal = document.createElement('div');
+        modal.className = 'external-token-modal-overlay';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'external-token-modal-content';
+        modalContent.style.cssText = `
+            background: var(--color-main-background, white);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        `;
+
+        modalContent.innerHTML = `
+            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">External Conversation ID</h2>
+            <p style="margin: 0 0 16px 0; color: var(--color-text-lighter, #666); font-size: 14px;">
+                This conversation was created externally. Please enter the conversation ID from the external Nextcloud server (the ID in the URL after /call/)
+            </p>
+            <form id="external-token-form">
+                <div class="form-group">
+                    <label for="external-token-input" style="display: block; font-weight: 500; margin-bottom: 8px;">External Conversation ID</label>
+                    <input type="text" id="external-token-input" placeholder="e.g. iioe3kww" autocomplete="off" style="
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                    ">
+                    <p style="margin: 8px 0 0 0; color: var(--color-text-lighter, #666); font-size: 12px;">
+                        You can find this in the external server URL: ext.example.com/call/<strong>iioe3kww</strong>
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary" style="
+                        flex: 1;
+                        padding: 10px 16px;
+                        border: none;
+                        border-radius: 6px;
+                        background: var(--color-primary, #0082c9);
+                        color: white;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">Use</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-token-btn" style="
+                        flex: 1;
+                        padding: 10px 16px;
+                        border: 1px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        background: transparent;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">Cancel</button>
+                </div>
+            </form>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Handle close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                callback(null);
+            }
+        });
+        modalContent.querySelector('#cancel-token-btn').addEventListener('click', () => {
+            modal.remove();
+            callback(null);
+        });
+
+        // Handle form submit
+        const form = modalContent.querySelector('#external-token-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const token = modalContent.querySelector('#external-token-input').value.trim();
+            if (token) {
+                modal.remove();
+                callback(token);
+            }
+        });
+
+        // Focus input field
+        modalContent.querySelector('#external-token-input').focus();
     }
 
     function addButtonToDashboard() {
