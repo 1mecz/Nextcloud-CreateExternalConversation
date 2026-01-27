@@ -24,12 +24,12 @@
     }
 
     function addParticipantButton() {
-        // Watch for top-bar and inject button - retry every 500ms until found
+        // Watch for top-bar__wrapper and inject button - retry every 500ms until found
         let attempts = 0;
         const checkInterval = setInterval(() => {
             attempts++;
-            const topBar = document.querySelector('.top-bar.top-bar--authorised');
-            if (!topBar || attempts > 60) { // Stop after 30 seconds
+            const wrapper = document.querySelector('.top-bar__wrapper');
+            if (!wrapper || attempts > 60) { // Stop after 30 seconds
                 if (attempts > 60) clearInterval(checkInterval);
                 return;
             }
@@ -40,11 +40,8 @@
             }
 
             clearInterval(checkInterval);
-            console.log('[CreateExternalConversation] Found top-bar and conversation, adding participant button');
+            console.log('[CreateExternalConversation] Found top-bar__wrapper and conversation, adding participant button');
 
-            // Find action buttons container (right side of top-bar)
-            const actionsContainer = topBar.querySelector('[class*="call-button"]') || topBar.lastElementChild;
-            
             // Create button with text
             const button = document.createElement('button');
             button.className = 'add-external-participant-btn';
@@ -55,12 +52,8 @@
 
             button.addEventListener('click', showAddParticipantModal);
             
-            // Insert before other action buttons or at end
-            if (actionsContainer?.parentElement) {
-                topBar.insertBefore(button, actionsContainer);
-            } else {
-                topBar.appendChild(button);
-            }
+            // Append to wrapper
+            wrapper.appendChild(button);
         }, 500);
     }
 
