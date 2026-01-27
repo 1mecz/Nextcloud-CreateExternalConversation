@@ -67,6 +67,13 @@
 
     function getConversationToken() {
         try {
+            // Try from pathname: /call/TOKEN
+            const pathnameMatch = window.location.pathname.match(/\/call\/([a-zA-Z0-9]+)/);
+            if (pathnameMatch?.[1]) {
+                console.log('[CreateExternalConversation] Token from pathname:', pathnameMatch[1]);
+                return pathnameMatch[1];
+            }
+
             // Try from URL hash: #conversation/TOKEN
             const hashMatch = window.location.hash.match(/#conversation\/([^/?]+)/);
             if (hashMatch?.[1]) {
@@ -242,12 +249,17 @@
             return;
         }
 
+        console.log('[CreateExternalConversation] handleAddParticipant - token:', token, 'federatedId:', federatedId);
+
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
 
+        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(token)}/participants?format=json`;
+        console.log('[CreateExternalConversation] Calling:', url);
+
         // Make request to add participant
-        fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(token)}/participants?format=json`, {
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -258,8 +270,12 @@
                 federatedId: federatedId,
             }),
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('[CreateExternalConversation] Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('[CreateExternalConversation] Response data:', data);
             if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
                 form.style.display = 'none';
                 resultContainer.style.display = 'block';
@@ -269,7 +285,7 @@
                 // Close modal after 2 seconds
                 setTimeout(() => modal.remove(), 2000);
             } else {
-                throw new Error(data.ocs.data.error || 'Unknown error');
+                throw new Error(data.ocs.data.error || data.ocs.meta.message || 'Unknown error');
             }
         })
         .catch(error => {
