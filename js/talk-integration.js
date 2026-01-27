@@ -46,14 +46,6 @@
             return;
         }
 
-        const token = getConversationToken();
-        console.log('[CreateExternalConversation] Conversation token:', token);
-
-        if (!token) {
-            console.log('[CreateExternalConversation] No conversation token found');
-            return;
-        }
-
         // Check if button already exists
         if (wrapper.querySelector('.add-external-participant-btn')) {
             console.log('[CreateExternalConversation] Button already exists');
@@ -68,9 +60,17 @@
         button.type = 'button';
         button.title = 'Add participant';
         button.setAttribute('aria-label', 'Add participant');
-        button.textContent = '+ Add';
+        button.textContent = '+ Add Participant';
 
-        button.addEventListener('click', showAddParticipantModal);
+        button.addEventListener('click', () => {
+            const token = getConversationToken();
+            console.log('[CreateExternalConversation] Button clicked, token:', token);
+            if (!token) {
+                alert('No conversation token found. Please reload the page.');
+                return;
+            }
+            showAddParticipantModal();
+        });
         
         // Append to wrapper
         wrapper.appendChild(button);
