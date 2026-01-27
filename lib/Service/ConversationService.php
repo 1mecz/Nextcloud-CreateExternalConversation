@@ -169,6 +169,13 @@ class ConversationService {
         $guestUser = $settings['external_user'] ?? '';
         $guestPassword = $settings['external_password'] ?? '';
 
+        $this->logger->info('Adding federated participant', [
+            'app' => 'create_external_conversation',
+            'url' => $url,
+            'federatedId' => $federatedId,
+            'guestUser' => $guestUser,
+        ]);
+
         // Use 'source=federated_users' for federated participants
         $data = [
             'newParticipant' => $federatedId,  // username@domain.com format
@@ -188,6 +195,12 @@ class ConversationService {
 
             $body = $response->getBody();
             $responseData = json_decode($body, true) ?? [];
+            
+            $this->logger->info('Response from external server', [
+                'app' => 'create_external_conversation',
+                'body' => substr($body, 0, 500),
+                'decoded' => $responseData,
+            ]);
             
             // Check if response indicates success
             $statuscode = $responseData['ocs']['meta']['statuscode'] ?? null;
@@ -210,6 +223,7 @@ class ConversationService {
                 'app' => 'create_external_conversation',
                 'federatedId' => $federatedId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
