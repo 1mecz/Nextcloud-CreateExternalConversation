@@ -110,6 +110,10 @@
     }
 
     function showAddParticipantModal() {
+        // Check if this is an external conversation (created via external conversation feature)
+        // For now, we can only add participants to external conversations
+        // External conversations are identified by looking for a marker in the page
+        
         // Create modal using inline styles like in federatedtalklink
         const modal = document.createElement('div');
         modal.className = 'add-participant-modal-overlay';
@@ -140,7 +144,7 @@
         `;
 
         modalContent.innerHTML = `
-            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">Add Participant</h2>
+            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">Add Participant to External Conversation</h2>
             <form id="add-participant-form">
                 <div class="form-group">
                     <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">Search users</label>
@@ -186,6 +190,11 @@
             <div id="error-container" style="display: none; margin-top: 20px;">
                 <div style="padding: 12px; background: var(--color-error-light, #fff5f5); border-radius: 6px; color: var(--color-error, #e74c3c);">
                     <p id="error-message" style="margin: 0;"></p>
+                </div>
+            </div>
+            <div id="info-container" style="display: none; margin-top: 20px;">
+                <div style="padding: 12px; background: var(--color-info-light, #f0f5ff); border-radius: 6px; color: var(--color-info, #0082c9);">
+                    <p id="info-message" style="margin: 0;"></p>
                 </div>
             </div>
         `;
