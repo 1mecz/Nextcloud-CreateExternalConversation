@@ -772,94 +772,109 @@
                 z-index: 1000000 !important;
             }
 
-            .add-participant-modal-overlay {
-                /* Inline styled in JavaScript */
+            function handleAddParticipant(modal, federatedId) {
+                // Get local token from conversation URL
+                const localToken = getConversationToken();
+
+                if (!localToken) {
+                    modal.querySelector('#error-container').style.display = 'block';
+                    modal.querySelector('#error-message').textContent = 'Error: Could not find conversation token. Please reload the page.';
+                    return;
+                }
+
+                const form = modal.querySelector('#add-participant-form');
+                const resultContainer = modal.querySelector('#result-container');
+                const errorContainer = modal.querySelector('#error-container');
+
+                // First, try the FederatedTalkLink endpoint to resolve external token like the colleague's app
+                console.log('[CreateExternalConversation] Resolving external token via federatedtalklink for local token:', localToken);
+                resolveExternalToken(localToken)
+                    .then(externalToken => {
+                        if (!externalToken) {
+                            throw new Error('Could not find external conversation token. This conversation may not be an external conversation.');
+                        }
+
+                        return addParticipantToExternal(externalToken, federatedId, modal, form, resultContainer, errorContainer);
+                    })
+                    .catch(error => {
+                        console.error('[CreateExternalConversation] Error resolving external token:', error);
+                        errorContainer.style.display = 'block';
+                        modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
+                    });
             }
 
-            .add-participant-modal-content {
-                /* Inline styled in JavaScript */
+            function resolveExternalToken(localToken) {
+                // 1) Try federatedtalklink API (searchBy=token matches their implementation)
+                const federatedUrl = `/ocs/v2.php/apps/federatedtalklink/api/v1/link?roomName=${encodeURIComponent(localToken)}&searchBy=token&format=json`;
+
+                return fetch(federatedUrl, {
+                    method: 'GET',
+                    headers: {
+                        'OCS-APIRequest': 'true',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    const externalToken = data?.ocs?.data?.token;
+                    if (externalToken) {
+                        console.log('[CreateExternalConversation] External token from federatedtalklink:', externalToken);
+                        return externalToken;
+                    }
+                    // Fallback to stored tokens (legacy behavior)
+                    const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                    const fallback = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
+                    if (fallback) {
+                        console.log('[CreateExternalConversation] Fallback external token from storage:', fallback);
+                    }
+                    return fallback;
+                })
+                .catch(err => {
+                    console.warn('[CreateExternalConversation] Federated link resolution failed, will try storage fallback:', err);
+                    const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                    return Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
+                });
             }
 
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px;
-                border-bottom: 1px solid #eee;
-            }
+            function addParticipantToExternal(externalToken, federatedId, modal, form, resultContainer, errorContainer) {
+                const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/participants?format=json`;
+                console.log('[CreateExternalConversation] Adding participant to external conversation:', url);
 
-            .modal-header h2 {
-                margin: 0;
-                font-size: 18px;
-            }
+                return fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'OCS-APIRequest': 'true',
+                        'requesttoken': OC.requestToken,
+                    },
+                    body: JSON.stringify({
+                        federatedId: federatedId,
+                    }),
+                })
+                .then(response => {
+                    console.log('[CreateExternalConversation] Add participant response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('[CreateExternalConversation] Add participant response data:', data);
+                    if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
+                        form.style.display = 'none';
+                        resultContainer.style.display = 'block';
+                        errorContainer.style.display = 'none';
+                        modal.querySelector('#added-participant').textContent = federatedId;
 
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 24px;
-                cursor: pointer;
-                color: #666;
+                        // Close modal after 2 seconds
+                        setTimeout(() => modal.remove(), 2000);
+                    } else {
+                        throw new Error(data.ocs.data.error || data.ocs.meta.message || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    console.error('[CreateExternalConversation] Error adding participant:', error);
+                    errorContainer.style.display = 'block';
+                    modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
+                });
             }
-
-            .modal-body {
-                padding: 20px;
-            }
-
-            .form-group {
-                margin-bottom: 15px;
-                position: relative; /* so search results anchor correctly */
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 5px;
-                font-weight: 500;
-                color: #333;
-            }
-
-            .form-group input {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 14px;
-                box-sizing: border-box;
-            }
-
-            .form-group input:focus {
-                outline: none;
-                border-color: var(--color-primary, #0082c9);
-                box-shadow: 0 0 0 2px rgba(0, 130, 201, 0.1);
-            }
-
-            .form-actions {
-                display: flex;
-                gap: 10px;
-                justify-content: flex-end;
-                margin-top: 20px;
-            }
-
-            .btn {
-                padding: 8px 16px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: background-color 0.2s;
-            }
-
-            .btn-primary {
-                background-color: var(--color-primary, #0082c9);
-                color: white;
-            }
-
-            .btn-primary:hover {
-                background-color: var(--color-primary-hover, #006ba3);
-            }
-
-            .btn-secondary {
-                background-color: #f0f0f0;
-                color: #333;
             }
 
             .btn-secondary:hover {
