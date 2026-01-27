@@ -818,6 +818,3 @@ class ConversationService {
             ];
         }
     }
-
-
-```
