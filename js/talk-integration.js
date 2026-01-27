@@ -50,14 +50,7 @@
             button.setAttribute('aria-label', 'Add participant');
             button.textContent = '+ Add Participant';
 
-            button.addEventListener('click', () => {
-                const token = getConversationToken();
-                if (!token) {
-                    alert('No conversation token found. Please reload the page.');
-                    return;
-                }
-                showAddParticipantModal();
-            });
+            button.addEventListener('click', showAddParticipantModal);
             
             // Append to wrapper
             wrapper.appendChild(button);
