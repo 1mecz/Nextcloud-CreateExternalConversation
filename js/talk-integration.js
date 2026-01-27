@@ -214,6 +214,7 @@
         resultsContainer.innerHTML = '<div class="search-result-item">Searching...</div>';
         resultsContainer.style.display = 'block';
 
+        // Try OCS endpoint first; if it fails, fallback to web route
         fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/local-users?search=${encodeURIComponent(query)}&format=json`, {
             credentials: 'same-origin',
             headers: {
@@ -222,18 +223,39 @@
                 'requesttoken': OC.requestToken,
             },
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('ocs-failed');
+            return response.json();
+        })
         .then(data => {
             if (data?.ocs?.meta?.statuscode === 200 && data?.ocs?.data?.success) {
                 displaySearchResults(data.ocs.data.users, resultsContainer, selectedParticipants, selectedContainer);
-            } else {
-                resultsContainer.innerHTML = '<div class="search-result-item">No results</div>';
+                return;
             }
+            throw new Error('ocs-invalid');
         })
-        .catch(error => {
-            console.error('[CreateExternalConversation] Search error:', error);
-            resultsContainer.innerHTML = '<div class="search-result-item">Search failed</div>';
-            resultsContainer.style.display = 'block';
+        .catch(() => {
+            // Fallback to non-OCS route
+            fetch(`/apps/create_external_conversation/local-users?search=${encodeURIComponent(query)}&format=json`, {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'requesttoken': OC.requestToken,
+                },
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data?.users) {
+                    displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
+                } else {
+                    resultsContainer.innerHTML = '<div class="search-result-item">No results</div>';
+                }
+            })
+            .catch(error => {
+                console.error('[CreateExternalConversation] Search fallback error:', error);
+                resultsContainer.innerHTML = '<div class="search-result-item">Search failed</div>';
+                resultsContainer.style.display = 'block';
+            });
         });
     }
 

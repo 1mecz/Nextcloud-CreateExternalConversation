@@ -16,6 +16,13 @@ return [
             'verb' => 'POST',
         ],
 
+        // Web API endpoint to search local users (fallback when OCS is blocked)
+        [
+            'name' => 'api#searchLocalUsers',
+            'url' => '/local-users',
+            'verb' => 'GET',
+        ],
+
         // Simple ping endpoint (web route) to verify routing works
         [
             'name' => 'api#ping',
