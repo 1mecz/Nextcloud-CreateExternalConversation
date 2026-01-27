@@ -181,6 +181,12 @@ class ApiController extends OCSController {
             }
         }
 
+        $this->logger->info('addParticipant called', [
+            'app' => 'create_external_conversation',
+            'token' => $token,
+            'federatedId' => $federatedId,
+        ]);
+
         if (empty($token)) {
             return new DataResponse(
                 ['error' => 'Token is required'],
@@ -195,20 +201,38 @@ class ApiController extends OCSController {
             );
         }
 
-        $result = $this->conversationService->addParticipantToConversation($token, $federatedId);
+        try {
+            $result = $this->conversationService->addParticipantToConversation($token, $federatedId);
 
-        if (!$result['success']) {
+            $this->logger->info('addParticipant result', [
+                'app' => 'create_external_conversation',
+                'result' => $result,
+            ]);
+
+            if (!$result['success']) {
+                return new DataResponse(
+                    ['error' => $result['error'] ?? 'Failed to add participant'],
+                    Http::STATUS_INTERNAL_SERVER_ERROR
+                );
+            }
+
+            return new DataResponse([
+                'success' => true,
+                'message' => 'Participant added successfully',
+                'federatedId' => $federatedId,
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Exception in addParticipant', [
+                'app' => 'create_external_conversation',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return new DataResponse(
-                ['error' => $result['error'] ?? 'Failed to add participant'],
+                ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }
-
-        return new DataResponse([
-            'success' => true,
-            'message' => 'Participant added successfully',
-            'federatedId' => $federatedId,
-        ]);
     }
 
     /**

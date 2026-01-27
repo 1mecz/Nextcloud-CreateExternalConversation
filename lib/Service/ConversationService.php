@@ -187,13 +187,14 @@ class ConversationService {
             $response = $client->request('POST', $url, [
                 'auth' => [$guestUser, $guestPassword],
                 'form_params' => $data,
+                'verify' => false,  // Skip SSL verification for self-signed certs
                 'headers' => [
                     'OCS-APIRequest' => 'true',
                     'Accept' => 'application/json',
                 ],
             ]);
 
-            $body = $response->getBody();
+            $body = $response->getBody()->getContents();
             $responseData = json_decode($body, true) ?? [];
             
             $this->logger->info('Response from external server', [
