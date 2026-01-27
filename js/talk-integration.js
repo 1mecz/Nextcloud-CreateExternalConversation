@@ -216,73 +216,58 @@
 
         const serverHost = window.location.hostname;
 
-        // Try core OCS user search first (provisioning API): /ocs/v2.php/cloud/users
-        fetch(`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&format=json`, {
+        // First try our app route (no subadmin rights needed)
+        const appUrl = OC.generateUrl('/apps/create_external_conversation/local-users') + `?search=${encodeURIComponent(query)}&format=json`;
+        fetch(appUrl, {
             credentials: 'same-origin',
             headers: {
-                'OCS-APIRequest': 'true',
                 'Accept': 'application/json',
                 'requesttoken': OC.requestToken,
             },
         })
-        .then(response => {
-            if (!response.ok) throw new Error('ocs-failed');
-            return response.json();
+        .then(resp => {
+            if (!resp.ok) throw new Error('app-http');
+            return resp.json();
         })
         .then(data => {
-            const statusCode = data?.ocs?.meta?.statuscode;
-            const statusText = data?.ocs?.meta?.status;
-            const rawUsers = data?.ocs?.data?.users;
-
-            if ((statusCode === 100 || statusCode === 200 || statusText === 'ok') && Array.isArray(rawUsers)) {
-                // provisioning_api returns array of IDs
-                const users = rawUsers
-                    .map(u => {
-                        if (typeof u === 'string') {
-                            return {
-                                id: u,
-                                displayName: u,
-                                federatedId: `${u}@${serverHost}`,
-                            };
-                        }
-                        // If object with id/displayname
-                        return {
-                            id: u.id,
-                            displayName: u.displayname || u.id,
-                            federatedId: `${u.id}@${serverHost}`,
-                        };
-                    })
-                    .filter(u => u.id && u.id !== OC.currentUser);
-
-                displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
+            if (data?.users) {
+                displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
                 return;
             }
-            throw new Error('ocs-invalid');
+            throw new Error('app-invalid');
         })
         .catch(() => {
-            // Fallback to app OCS route (if enabled)
-            const localUrl = OC.generateUrl('/apps/create_external_conversation/local-users') + `?search=${encodeURIComponent(query)}&format=json`;
-            fetch(localUrl, {
+            // Fallback to provisioning API (may require subadmin)
+            fetch(`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&format=json`, {
                 credentials: 'same-origin',
                 headers: {
+                    'OCS-APIRequest': 'true',
                     'Accept': 'application/json',
                     'requesttoken': OC.requestToken,
                 },
             })
-            .then(resp => {
-                if (!resp.ok) throw new Error('fallback-http');
-                return resp.json();
+            .then(response => {
+                if (!response.ok) throw new Error('ocs-failed');
+                return response.json();
             })
             .then(data => {
-                if (data?.users) {
-                    displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
-                } else {
-                    resultsContainer.innerHTML = '<div class="search-result-item">No results</div>';
+                const statusCode = data?.ocs?.meta?.statuscode;
+                const statusText = data?.ocs?.meta?.status;
+                const rawUsers = data?.ocs?.data?.users;
+
+                if ((statusCode === 100 || statusCode === 200 || statusText === 'ok') && Array.isArray(rawUsers)) {
+                    const users = rawUsers
+                        .map(u => (typeof u === 'string' ? { id: u, displayName: u, federatedId: `${u}@${serverHost}` } : { id: u.id, displayName: u.displayname || u.id, federatedId: `${u.id}@${serverHost}` }))
+                        .filter(u => u.id && u.id !== OC.currentUser);
+
+                    displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
+                    return;
                 }
+                throw new Error('ocs-invalid');
             })
             .catch(error => {
-                console.error('[CreateExternalConversation] Search fallback error:', error);
-                resultsContainer.innerHTML = '<div class="search-result-item">Search failed</div>';
+                console.error('[CreateExternalConversation] Search error:', error);
+                resultsContainer.innerHTML = '<div class="search-result-item">No results (need subadmin?)</div>';
                 resultsContainer.style.display = 'block';
             });
         });
