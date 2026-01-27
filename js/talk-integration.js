@@ -243,7 +243,7 @@
     }
 
     function handleAddParticipant(modal, federatedId) {
-        // Get token at the time of adding (might have loaded by now)
+        // Get local conversation token
         const localToken = getConversationToken();
 
         if (!localToken) {
@@ -252,30 +252,16 @@
             return;
         }
 
-        // Try to find external token from localStorage first
-        let externalToken = null;
-        const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
-        externalToken = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
-
-        // If not found, fetch from local Talk API then search on external server
-        if (!externalToken) {
-            fetchConversationAndGetExternalToken(localToken, (token) => {
-                if (token) {
-                    addParticipantToExternalConversation(modal, federatedId, token);
-                } else {
-                    // Fallback to manual input
-                    showExternalTokenModal((manualToken) => {
-                        if (manualToken) {
-                            addParticipantToExternalConversation(modal, federatedId, manualToken);
-                        }
-                    });
-                }
-            });
-            return;
-        }
-
-        console.log('[CreateExternalConversation] handleAddParticipant - localToken:', localToken, 'externalToken:', externalToken, 'federatedId:', federatedId);
-        addParticipantToExternalConversation(modal, federatedId, externalToken);
+        // Fetch local conversation name then get external room link
+        fetchConversationAndGetExternalToken(localToken, (token) => {
+            if (token) {
+                modal.querySelector('#result-container').style.display = 'block';
+                modal.querySelector('#added-participant').textContent = 'Token: ' + token;
+            } else {
+                modal.querySelector('#error-container').style.display = 'block';
+                modal.querySelector('#error-message').textContent = 'Could not find matching room on external server. Please check the conversation name.';
+            }
+        });
     }
 
     function fetchConversationAndGetExternalToken(localToken, callback) {
@@ -298,36 +284,26 @@
             const conversationName = localConversation.displayName || localConversation.name;
             console.log('[CreateExternalConversation] Found local conversation:', conversationName);
 
-            // Call backend API to find matching room on external server
-            fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/search-rooms?name=${encodeURIComponent(conversationName)}&format=json`, {
+            // Call backend API to get room link by name
+            fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/room-link?name=${encodeURIComponent(conversationName)}&format=json`, {
                 headers: {
                     'OCS-APIRequest': 'true',
                     'requesttoken': OC.requestToken,
                 },
             })
             .then(response => response.json())
-            .then(roomsData => {
-                const rooms = roomsData.ocs?.data?.rooms || [];
-                if (rooms.length > 0) {
-                    const externalToken = rooms[0].token;
-                    console.log('[CreateExternalConversation] Found external room:', externalToken);
-                    
-                    // Store in localStorage
-                    const stored = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
-                    stored[externalToken] = {
-                        token: externalToken,
-                        createdAt: new Date().toISOString(),
-                    };
-                    localStorage.setItem('externalConversationTokens', JSON.stringify(stored));
-                    
-                    callback(externalToken);
+            .then(roomData => {
+                const token = roomData.ocs?.data?.token;
+                if (token) {
+                    console.log('[CreateExternalConversation] Found external room token:', token);
+                    callback(token);
                 } else {
-                    console.log('[CreateExternalConversation] No matching rooms found');
+                    console.log('[CreateExternalConversation] No matching room found');
                     callback(null);
                 }
             })
             .catch(error => {
-                console.error('[CreateExternalConversation] Error searching rooms:', error);
+                console.error('[CreateExternalConversation] Error getting room link:', error);
                 callback(null);
             });
         })

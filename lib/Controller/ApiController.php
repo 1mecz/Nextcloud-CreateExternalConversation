@@ -344,4 +344,48 @@ class ApiController extends OCSController {
             );
         }
     }
+
+    /**
+     * Get room link (token and info) from external server by name
+     * Similar to federatedtalklink plugin
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getRoomLink(string $name = ''): DataResponse {
+        $name = trim($name);
+
+        if (empty($name)) {
+            return new DataResponse(
+                ['error' => 'Name is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        try {
+            $result = $this->conversationService->getRoomLink($name);
+            
+            if (!$result['success']) {
+                return new DataResponse(
+                    ['error' => $result['error'] ?? 'Room not found'],
+                    Http::STATUS_NOT_FOUND
+                );
+            }
+
+            return new DataResponse([
+                'link' => $result['link'],
+                'token' => $result['token'],
+                'roomInfo' => $result['roomInfo'] ?? [],
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error getting room link', [
+                'exception' => $e->getMessage()
+            ]);
+
+            return new DataResponse(
+                ['error' => 'Failed to get room link'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }

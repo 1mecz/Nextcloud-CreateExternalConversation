@@ -624,4 +624,90 @@ class ConversationService {
             throw $e;
         }
     }
+
+    /**
+     * Get room link and info from external server by name
+     * Similar to federatedtalklink plugin endpoint
+     *
+     * @param string $name Room name to search for
+     * @return array Array with 'success', 'link', 'token', 'roomInfo'
+     */
+    public function getRoomLink(string $name): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'External server not configured',
+            ];
+        }
+
+        $settings = $this->settingsService->getSettings();
+        $externalUrl = $settings['external_url'] ?? '';
+
+        if (empty($externalUrl)) {
+            return [
+                'success' => false,
+                'error' => 'External server URL not configured',
+            ];
+        }
+
+        try {
+            // Fetch all rooms from external server
+            $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
+
+            $client = $this->clientService->newClient();
+            $response = $client->request('GET', $url, [
+                'headers' => [
+                    'OCS-APIRequest' => 'true',
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Basic ' . base64_encode(
+                        $settings['external_user'] . ':' . $settings['external_password']
+                    ),
+                ],
+            ]);
+
+            $body = $response->getBody();
+            $data = json_decode($body, true) ?? [];
+
+            $rooms = $data['ocs']['data'] ?? [];
+
+            // Find matching room
+            foreach ($rooms as $room) {
+                $displayName = $room['displayName'] ?? $room['name'] ?? '';
+                if (stripos($displayName, $name) !== false) {
+                    $token = $room['token'] ?? '';
+                    $externalUrlTrimmed = rtrim($externalUrl, '/');
+                    
+                    return [
+                        'success' => true,
+                        'link' => str_replace(['https://', 'http://'], '', $externalUrlTrimmed) . '/call/' . $token,
+                        'token' => $token,
+                        'roomInfo' => [
+                            'token' => $token,
+                            'name' => $room['name'] ?? '',
+                            'displayName' => $displayName,
+                            'description' => $room['description'] ?? '',
+                            'type' => $room['type'] ?? 0,
+                        ],
+                    ];
+                }
+            }
+
+            return [
+                'success' => false,
+                'error' => 'Room not found',
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Error getting room link', [
+                'app' => 'create_external_conversation',
+                'name' => $name,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
 ```

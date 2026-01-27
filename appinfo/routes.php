@@ -80,3 +80,12 @@ return [
             'url' => '/api/v1/search-rooms',
             'verb' => 'GET',
         ],
+
+        // OCS API endpoint to get room link (token) from external server by name
+        [
+            'name' => 'api#getRoomLink',
+            'url' => '/api/v1/room-link',
+            'verb' => 'GET',
+        ],
+    ],
+];
