@@ -210,30 +210,41 @@
     }
 
     function searchLocalUsers(query, resultsContainer, selectedParticipants, selectedContainer) {
+        // Show loading state
+        resultsContainer.innerHTML = '<div class="search-result-item">Searching...</div>';
+        resultsContainer.style.display = 'block';
+
         fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/local-users?search=${encodeURIComponent(query)}&format=json`, {
+            credentials: 'same-origin',
             headers: {
                 'OCS-APIRequest': 'true',
+                'Accept': 'application/json',
                 'requesttoken': OC.requestToken,
             },
         })
         .then(response => response.json())
         .then(data => {
-            if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
+            if (data?.ocs?.meta?.statuscode === 200 && data?.ocs?.data?.success) {
                 displaySearchResults(data.ocs.data.users, resultsContainer, selectedParticipants, selectedContainer);
+            } else {
+                resultsContainer.innerHTML = '<div class="search-result-item">No results</div>';
             }
         })
         .catch(error => {
             console.error('[CreateExternalConversation] Search error:', error);
+            resultsContainer.innerHTML = '<div class="search-result-item">Search failed</div>';
+            resultsContainer.style.display = 'block';
         });
     }
 
     function displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer) {
+        resultsContainer.innerHTML = '';
+
         if (!users || users.length === 0) {
-            resultsContainer.style.display = 'none';
+            resultsContainer.innerHTML = '<div class="search-result-item">No users found</div>';
+            resultsContainer.style.display = 'block';
             return;
         }
-
-        resultsContainer.innerHTML = '';
         users.forEach(user => {
             if (selectedParticipants.has(user.federatedId)) {
                 return; // Skip already selected
@@ -287,9 +298,6 @@
         } catch (e) {
             console.warn('[CreateExternalConversation] refreshTalkList error:', e);
         }
-
-        // Fallback: soft reload after short delay so user sees the new room
-        setTimeout(() => window.location.reload(), 800);
     }
 
     function addStyles() {
@@ -421,6 +429,7 @@
 
             .form-group {
                 margin-bottom: 15px;
+                position: relative; /* so search results anchor correctly */
             }
 
             .form-group label {
