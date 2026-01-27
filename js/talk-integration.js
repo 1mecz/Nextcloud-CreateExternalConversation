@@ -72,15 +72,28 @@
     function getConversationToken() {
         // Try multiple ways to get token
         const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token;
-        if (token) return token;
+        if (token) {
+            console.log('[CreateExternalConversation] Token from Talk store:', token);
+            return token;
+        }
+        console.log('[CreateExternalConversation] No token in Talk store');
 
         // Try from URL hash: #conversation/BKXYZ
         const hashMatch = window.location.hash.match(/#conversation\/([^/]+)/);
-        if (hashMatch?.[1]) return hashMatch[1];
+        if (hashMatch?.[1]) {
+            console.log('[CreateExternalConversation] Token from URL hash:', hashMatch[1]);
+            return hashMatch[1];
+        }
+        console.log('[CreateExternalConversation] No token in URL hash:', window.location.hash);
 
         // Try from data attribute on conversation element
         const convElement = document.querySelector('[data-conversation-token]');
-        if (convElement) return convElement.getAttribute('data-conversation-token');
+        if (convElement) {
+            const tokenFromData = convElement.getAttribute('data-conversation-token');
+            console.log('[CreateExternalConversation] Token from data attribute:', tokenFromData);
+            return tokenFromData;
+        }
+        console.log('[CreateExternalConversation] No conversation element with data-conversation-token found');
 
         return null;
     }
