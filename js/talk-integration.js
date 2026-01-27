@@ -31,88 +31,66 @@
     }
 
     function addParticipantButton() {
-        const wrapper = document.querySelector('.top-bar__wrapper');
-        console.log('[CreateExternalConversation] addParticipantButton - wrapper found:', !!wrapper);
-
-        // Debug: find all top-bar related elements
-        const topBarElements = document.querySelectorAll('[class*="top-bar"]');
-        console.log('[CreateExternalConversation] Found elements with "top-bar" class:', topBarElements.length);
-        topBarElements.forEach((el, i) => {
-            console.log(`  [${i}] ${el.className}`);
-        });
-
-        if (!wrapper) {
-            console.log('[CreateExternalConversation] top-bar__wrapper not found');
-            return;
-        }
-
-        // Check if button already exists
-        if (wrapper.querySelector('.add-external-participant-btn')) {
-            console.log('[CreateExternalConversation] Button already exists');
-            return;
-        }
-
-        console.log('[CreateExternalConversation] Adding participant button to wrapper');
-
-        // Create button with text
-        const button = document.createElement('button');
-        button.className = 'add-external-participant-btn';
-        button.type = 'button';
-        button.title = 'Add participant';
-        button.setAttribute('aria-label', 'Add participant');
-        button.textContent = '+ Add Participant';
-
-        button.addEventListener('click', () => {
-            const token = getConversationToken();
-            console.log('[CreateExternalConversation] Button clicked, token:', token);
-            if (!token) {
-                alert('No conversation token found. Please reload the page.');
+        try {
+            const wrapper = document.querySelector('.top-bar__wrapper');
+            if (!wrapper) {
                 return;
             }
-            showAddParticipantModal();
-        });
-        
-        // Append to wrapper
-        wrapper.appendChild(button);
-        console.log('[CreateExternalConversation] Button added to wrapper');
+
+            // Check if button already exists
+            if (wrapper.querySelector('.add-external-participant-btn')) {
+                return;
+            }
+
+            // Create button with text
+            const button = document.createElement('button');
+            button.className = 'add-external-participant-btn';
+            button.type = 'button';
+            button.title = 'Add participant';
+            button.setAttribute('aria-label', 'Add participant');
+            button.textContent = '+ Add Participant';
+
+            button.addEventListener('click', () => {
+                const token = getConversationToken();
+                if (!token) {
+                    alert('No conversation token found. Please reload the page.');
+                    return;
+                }
+                showAddParticipantModal();
+            });
+            
+            // Append to wrapper
+            wrapper.appendChild(button);
+        } catch (e) {
+            console.error('[CreateExternalConversation] Error adding participant button:', e);
+        }
     }
 
     function getConversationToken() {
-        // Try multiple ways to get token
-        const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token;
-        if (token) {
-            console.log('[CreateExternalConversation] Token from Talk store:', token);
-            return token;
-        }
-        console.log('[CreateExternalConversation] No token in Talk store, trying alternatives...');
+        try {
+            // Try from URL hash: #conversation/TOKEN
+            const hashMatch = window.location.hash.match(/#conversation\/([^/?]+)/);
+            if (hashMatch?.[1]) {
+                return hashMatch[1];
+            }
 
-        // Try from URL hash: #conversation/BKXYZ
-        const hashMatch = window.location.hash.match(/#conversation\/([^/]+)/);
-        if (hashMatch?.[1]) {
-            console.log('[CreateExternalConversation] Token from URL hash:', hashMatch[1]);
-            return hashMatch[1];
-        }
-
-        // Try from data attribute on conversation element
-        const convElement = document.querySelector('[data-conversation-token]');
-        if (convElement) {
-            const tokenFromData = convElement.getAttribute('data-conversation-token');
-            console.log('[CreateExternalConversation] Token from data attribute:', tokenFromData);
-            return tokenFromData;
-        }
-
-        // Try to find token in window.OCA.Talk object structure
-        console.log('[CreateExternalConversation] window.OCA.Talk.store:', window.OCA?.Talk?.store);
-        if (window.OCA?.Talk?.store?.state?.conversations) {
-            const convs = window.OCA.Talk.store.state.conversations;
-            console.log('[CreateExternalConversation] Available conversations:', Object.keys(convs));
-            for (const token in convs) {
-                console.log('[CreateExternalConversation] Found conversation token in state:', token);
+            // Try Talk store
+            const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token;
+            if (token) {
                 return token;
             }
-        }
 
-        return null;
+            // Try from data attribute
+            const convElement = document.querySelector('[data-conversation-token]');
+            if (convElement) {
+                return convElement.getAttribute('data-conversation-token');
+            }
+
+            return null;
+        } catch (e) {
+            console.error('[CreateExternalConversation] Error getting token:', e);
+            return null;
+        }
     }
 
     function showAddParticipantModal() {
