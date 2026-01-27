@@ -196,6 +196,20 @@ class ConversationService {
     }
 
     /**
+     * Add participant to existing conversation on external server
+     */
+    public function addParticipantToConversation(string $token, string $federatedId): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'App is not configured.',
+            ];
+        }
+
+        return $this->addFederatedParticipant($token, $federatedId);
+    }
+
+    /**
      * Add participant to room (for local users)
      */
     private function addParticipant(string $token, string $participantId, string $source = 'users'): array {

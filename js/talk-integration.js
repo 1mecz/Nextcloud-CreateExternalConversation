@@ -18,6 +18,167 @@
 
         // Add button to Talk dashboard
         addButtonToDashboard();
+
+        // Add button to top-bar for adding participants to existing conversations
+        addParticipantButton();
+    }
+
+    function addParticipantButton() {
+        // Watch for top-bar and inject button
+        const checkInterval = setInterval(() => {
+            const topBar = document.querySelector('.top-bar.top-bar--authorised');
+            if (!topBar) {
+                return; // Wait for top-bar to appear
+            }
+
+            clearInterval(checkInterval);
+            console.log('[CreateExternalConversation] Found top-bar, adding participant button');
+
+            // Create button
+            const button = document.createElement('button');
+            button.className = 'add-external-participant-btn top-bar-button';
+            button.type = 'button';
+            button.title = 'Add participant from local Nextcloud';
+            button.innerHTML = `
+                <svg class="material-design-icon__svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M13,7H11V11H7V13H11V17H13V13H17V11H13V7Z"/>
+                </svg>
+                <span class="text">Add participant</span>
+            `;
+
+            button.addEventListener('click', showAddParticipantModal);
+            topBar.appendChild(button);
+        }, 100);
+    }
+
+    function showAddParticipantModal() {
+        // Get current conversation token from Talk
+        const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token ||
+                      window.location.hash.match(/#conversation\/([^/]+)/)?.[1];
+
+        if (!token) {
+            alert('Could not find conversation token');
+            return;
+        }
+
+        console.log('[CreateExternalConversation] Opening add participant modal for token:', token);
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'create-external-conversation-modal';
+        modal.innerHTML = `
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add Participant</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-participant-form">
+                        <div class="form-group">
+                            <label for="participant-search">Search users</label>
+                            <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off">
+                            <div id="participant-search-results" class="search-results" style="display: none;"></div>
+                            <div id="selected-participants" class="selected-participants"></div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+                        </div>
+                    </form>
+                    <div id="result-container" style="display: none;" class="result-container">
+                        <div class="result-success">
+                            <p><strong>Success!</strong></p>
+                            <p>Participant added: <span id="added-participant"></span></p>
+                        </div>
+                    </div>
+                    <div id="error-container" style="display: none;" class="error-container">
+                        <p id="error-message"></p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Store selected participant
+        const selectedParticipants = new Set();
+
+        // Handle participant search
+        const searchInput = modal.querySelector('#participant-search');
+        const searchResults = modal.querySelector('#participant-search-results');
+        const selectedContainer = modal.querySelector('#selected-participants');
+        
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer);
+            }, 300);
+        });
+
+        // Handle close
+        modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+        modal.querySelector('.modal-overlay').addEventListener('click', () => modal.remove());
+        modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
+
+        // Handle form submit
+        const form = modal.querySelector('#add-participant-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (selectedParticipants.size === 0) {
+                modal.querySelector('#error-container').style.display = 'block';
+                modal.querySelector('#error-message').textContent = 'Please select a participant';
+                return;
+            }
+            const participant = Array.from(selectedParticipants)[0];
+            handleAddParticipant(modal, token, participant);
+        });
+    }
+
+    function handleAddParticipant(modal, token, federatedId) {
+        const form = modal.querySelector('#add-participant-form');
+        const resultContainer = modal.querySelector('#result-container');
+        const errorContainer = modal.querySelector('#error-container');
+
+        // Make request to add participant
+        fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(token)}/participants?format=json`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'OCS-APIRequest': 'true',
+                'requesttoken': OC.requestToken,
+            },
+            body: JSON.stringify({
+                federatedId: federatedId,
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
+                form.style.display = 'none';
+                resultContainer.style.display = 'block';
+                errorContainer.style.display = 'none';
+                modal.querySelector('#added-participant').textContent = federatedId;
+
+                // Close modal after 2 seconds
+                setTimeout(() => modal.remove(), 2000);
+            } else {
+                throw new Error(data.ocs.data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error('[CreateExternalConversation] Error:', error);
+            errorContainer.style.display = 'block';
+            modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
+        });
     }
 
     function addButtonToDashboard() {
@@ -651,6 +812,34 @@
 
             .participant-chip .remove-participant:hover {
                 opacity: 0.7;
+            }
+
+            .top-bar-button {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                background: none;
+                border: none;
+                color: var(--color-text, #333);
+                cursor: pointer;
+                font-size: 13px;
+                transition: opacity 0.2s;
+                margin-right: 8px;
+            }
+
+            .top-bar-button:hover {
+                opacity: 0.7;
+            }
+
+            .top-bar-button .material-design-icon__svg {
+                width: 18px;
+                height: 18px;
+                fill: currentColor;
+            }
+
+            .add-external-participant-btn .text {
+                display: inline;
             }
         `;
 

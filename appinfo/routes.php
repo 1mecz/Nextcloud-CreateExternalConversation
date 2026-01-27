@@ -59,5 +59,12 @@ return [
             'url' => '/api/v1/test',
             'verb' => 'GET',
         ],
+
+        // OCS API endpoint to add participant to existing conversation
+        [
+            'name' => 'api#addParticipant',
+            'url' => '/api/v1/conversation/{token}/participants',
+            'verb' => 'POST',
+        ],
     ],
 ];

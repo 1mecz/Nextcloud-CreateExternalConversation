@@ -155,6 +155,39 @@ class ApiController extends OCSController {
     }
 
     /**
+     * Add participant to existing conversation on external server
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function addParticipant(string $token = '', string $federatedId = ''): DataResponse {
+        $token = trim($token);
+        $federatedId = trim($federatedId);
+
+        if (empty($token) || empty($federatedId)) {
+            return new DataResponse(
+                ['error' => 'Token and federated ID are required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $result = $this->conversationService->addParticipantToConversation($token, $federatedId);
+
+        if (!$result['success']) {
+            return new DataResponse(
+                ['error' => $result['error'] ?? 'Failed to add participant'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return new DataResponse([
+            'success' => true,
+            'message' => 'Participant added successfully',
+            'federatedId' => $federatedId,
+        ]);
+    }
+
+    /**
      * Search for local users (for inviting to external conversation)
      * 
      * @NoAdminRequired
