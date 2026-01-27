@@ -375,10 +375,41 @@ class ConversationService {
             }
         }
 
-        $response = $client->request($method, $url, $options);
-        $body = $response->getBody();
-        
-        return json_decode($body, true) ?? [];
+        try {
+            $response = $client->request($method, $url, $options);
+            $body = $response->getBody();
+            $decoded = json_decode($body, true);
+            
+            if ($decoded === null && !empty($body)) {
+                // Not valid JSON - likely an error response
+                $this->logger->error('Non-JSON response from external server', [
+                    'app' => 'create_external_conversation',
+                    'url' => $url,
+                    'body' => substr($body, 0, 500),
+                ]);
+                throw new \Exception('Invalid response from external server: not JSON');
+            }
+            
+            return $decoded ?? [];
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $body = $e->getResponse()->getBody()->getContents();
+            $this->logger->error('HTTP Client Error', [
+                'app' => 'create_external_conversation',
+                'url' => $url,
+                'status' => $e->getResponse()->getStatusCode(),
+                'body' => substr($body, 0, 500),
+            ]);
+            throw new \Exception('HTTP ' . $e->getResponse()->getStatusCode() . ': ' . $e->getMessage());
+        } catch (\GuzzleHttp\Exception\ServerException $e) {
+            $body = $e->getResponse()->getBody()->getContents();
+            $this->logger->error('HTTP Server Error', [
+                'app' => 'create_external_conversation',
+                'url' => $url,
+                'status' => $e->getResponse()->getStatusCode(),
+                'body' => substr($body, 0, 500),
+            ]);
+            throw new \Exception('HTTP ' . $e->getResponse()->getStatusCode() . ': ' . $e->getMessage());
+        }
     }
 
     /**
