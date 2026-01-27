@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace OCA\CreateExternalConversation\Service;
 
 use OCP\Http\Client\IClientService;
+use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -16,7 +17,8 @@ class ConversationService {
     public function __construct(
         private SettingsService $settingsService,
         private IClientService $clientService,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private IRequest $request
     ) {
     }
 
@@ -488,7 +490,16 @@ class ConversationService {
      */
     private function fetchLocalRoom(string $token): ?array {
         try {
-            $url = 'http://localhost/ocs/v2.php/apps/spreed/api/v4/room/' . $token;
+            // Get the server host/base URL
+            $baseUrl = $this->request->getServerProtocol() . '://' . $this->request->getServerHost();
+            
+            $url = $baseUrl . '/ocs/v2.php/apps/spreed/api/v4/room/' . urlencode($token);
+            
+            $this->logger->debug('Fetching local room from:', [
+                'app' => 'create_external_conversation',
+                'url' => $url,
+                'token' => $token,
+            ]);
             
             // Use local Nextcloud API without authentication (internal request)
             $client = $this->clientService->newClient();
@@ -502,6 +513,11 @@ class ConversationService {
             $body = $response->getBody();
             $data = json_decode($body, true) ?? [];
 
+            $this->logger->debug('Local room response:', [
+                'app' => 'create_external_conversation',
+                'statuscode' => $data['ocs']['meta']['statuscode'] ?? null,
+            ]);
+
             return $data['ocs']['data'] ?? null;
         } catch (\Exception $e) {
             $this->logger->warning('Failed to fetch local room', [
@@ -513,3 +529,5 @@ class ConversationService {
             return null;
         }
     }
+
+```

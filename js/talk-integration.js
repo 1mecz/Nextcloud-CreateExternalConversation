@@ -291,11 +291,29 @@
         })
         .then(response => {
             console.log('[CreateExternalConversation] External token API response status:', response.status);
+            console.log('[CreateExternalConversation] External token API response headers:', response.headers.get('content-type'));
+            
+            // Check if response is ok
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Check content type
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('[CreateExternalConversation] Invalid content type:', contentType);
+                // Try to get response text for debugging
+                return response.text().then(text => {
+                    console.error('[CreateExternalConversation] Response text:', text);
+                    throw new Error(`Invalid content type: ${contentType}. Expected JSON.`);
+                });
+            }
+            
             return response.json();
         })
         .then(data => {
             console.log('[CreateExternalConversation] External token API response data:', data);
-            if (data.ocs.meta.statuscode === 200 && data.ocs.data.success && data.ocs.data.externalToken) {
+            if (data && data.ocs && data.ocs.meta && data.ocs.meta.statuscode === 200 && data.ocs.data && data.ocs.data.success && data.ocs.data.externalToken) {
                 const externalToken = data.ocs.data.externalToken;
                 console.log('[CreateExternalConversation] Got external token:', externalToken);
                 
@@ -312,7 +330,8 @@
                 
                 callback(externalToken);
             } else {
-                console.log('[CreateExternalConversation] Failed to get external token:', data.ocs.data.error || 'Unknown error');
+                const error = data && data.ocs && data.ocs.data ? data.ocs.data.error : 'Unknown error';
+                console.log('[CreateExternalConversation] Failed to get external token:', error);
                 callback(null);
             }
         })
@@ -346,11 +365,26 @@
         })
         .then(response => {
             console.log('[CreateExternalConversation] Response status:', response.status);
+            console.log('[CreateExternalConversation] Response headers:', response.headers.get('content-type'));
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('[CreateExternalConversation] Invalid content type:', contentType);
+                return response.text().then(text => {
+                    console.error('[CreateExternalConversation] Response text:', text);
+                    throw new Error(`Invalid content type: ${contentType}. Response: ${text.substring(0, 200)}`);
+                });
+            }
+            
             return response.json();
         })
         .then(data => {
             console.log('[CreateExternalConversation] Response data:', data);
-            if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
+            if (data && data.ocs && data.ocs.meta && data.ocs.meta.statuscode === 200 && data.ocs.data && data.ocs.data.success) {
                 form.style.display = 'none';
                 resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
@@ -370,7 +404,8 @@
                 // Close modal after 2 seconds
                 setTimeout(() => modal.remove(), 2000);
             } else {
-                throw new Error(data.ocs.data.error || data.ocs.meta.message || 'Unknown error');
+                const error = data && data.ocs && data.ocs.data ? data.ocs.data.error : (data && data.ocs && data.ocs.meta ? data.ocs.meta.message : 'Unknown error');
+                throw new Error(error);
             }
         })
         .catch(error => {
