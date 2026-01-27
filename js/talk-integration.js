@@ -64,20 +64,30 @@
             // Try from URL hash: #conversation/TOKEN
             const hashMatch = window.location.hash.match(/#conversation\/([^/?]+)/);
             if (hashMatch?.[1]) {
+                console.log('[CreateExternalConversation] Token from URL hash:', hashMatch[1]);
                 return hashMatch[1];
             }
 
             // Try Talk store
             const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token;
             if (token) {
+                console.log('[CreateExternalConversation] Token from Talk store:', token);
                 return token;
             }
 
             // Try from data attribute
             const convElement = document.querySelector('[data-conversation-token]');
             if (convElement) {
-                return convElement.getAttribute('data-conversation-token');
+                const tokenFromData = convElement.getAttribute('data-conversation-token');
+                console.log('[CreateExternalConversation] Token from data attribute:', tokenFromData);
+                return tokenFromData;
             }
+
+            // Log debug info
+            console.log('[CreateExternalConversation] Could not find token. Debug info:');
+            console.log('  window.location.hash:', window.location.hash);
+            console.log('  window.location.pathname:', window.location.pathname);
+            console.log('  window.OCA?.Talk exists:', !!window.OCA?.Talk);
 
             return null;
         } catch (e) {
