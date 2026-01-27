@@ -214,8 +214,10 @@
         resultsContainer.innerHTML = '<div class="search-result-item">Searching...</div>';
         resultsContainer.style.display = 'block';
 
-        // Try OCS endpoint first; if it fails, fallback to web route
-        fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/local-users?search=${encodeURIComponent(query)}&format=json`, {
+        const serverHost = window.location.hostname;
+
+        // Try core OCS user search first (always available): /ocs/v2.php/cloud/users
+        fetch(`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&format=json`, {
             credentials: 'same-origin',
             headers: {
                 'OCS-APIRequest': 'true',
@@ -228,14 +230,22 @@
             return response.json();
         })
         .then(data => {
-            if (data?.ocs?.meta?.statuscode === 200 && data?.ocs?.data?.success) {
-                displaySearchResults(data.ocs.data.users, resultsContainer, selectedParticipants, selectedContainer);
+            if (data?.ocs?.meta?.statuscode === 200 && Array.isArray(data?.ocs?.data?.users)) {
+                const users = data.ocs.data.users
+                    .map(u => ({
+                        id: u.id,
+                        displayName: u.displayname || u.id,
+                        federatedId: `${u.id}@${serverHost}`,
+                    }))
+                    .filter(u => u.id && u.id !== OC.currentUser);
+
+                displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
                 return;
             }
             throw new Error('ocs-invalid');
         })
         .catch(() => {
-            // Fallback to non-OCS route (handles index.php if needed via OC.generateUrl)
+            // Fallback to app OCS route (if enabled)
             const localUrl = OC.generateUrl('/apps/create_external_conversation/local-users') + `?search=${encodeURIComponent(query)}&format=json`;
             fetch(localUrl, {
                 credentials: 'same-origin',
