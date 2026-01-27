@@ -601,8 +601,9 @@ class ConversationService {
             throw new \Exception('External server not configured');
         }
 
-        $settings = $this->settingsService->getSettings();
-        $externalUrl = $settings['external_url'] ?? '';
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $username = $this->settingsService->getUsername();
+        $password = $this->settingsService->getPassword();
 
         if (empty($externalUrl)) {
             throw new \Exception('External server URL not configured');
@@ -618,7 +619,7 @@ class ConversationService {
                     'OCS-APIRequest' => 'true',
                     'Accept' => 'application/json',
                     'Authorization' => 'Basic ' . base64_encode(
-                        $settings['external_user'] . ':' . $settings['external_password']
+                        $username . ':' . $password
                     ),
                 ],
             ]);
@@ -669,8 +670,9 @@ class ConversationService {
             ];
         }
 
-        $settings = $this->settingsService->getSettings();
-        $externalUrl = $settings['external_url'] ?? '';
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $username = $this->settingsService->getUsername();
+        $password = $this->settingsService->getPassword();
 
         if (empty($externalUrl)) {
             return [
@@ -689,7 +691,7 @@ class ConversationService {
                     'OCS-APIRequest' => 'true',
                     'Accept' => 'application/json',
                     'Authorization' => 'Basic ' . base64_encode(
-                        $settings['external_user'] . ':' . $settings['external_password']
+                        $username . ':' . $password
                     ),
                 ],
             ]);
@@ -755,10 +757,9 @@ class ConversationService {
             ];
         }
 
-        $settings = $this->settingsService->getSettings();
-        $externalUrl = $settings['external_url'] ?? '';
-        $guestUser = $settings['external_user'] ?? '';
-        $guestPassword = $settings['external_password'] ?? '';
+        $externalUrl = $this->settingsService->getExternalUrl();
+        $guestUser = $this->settingsService->getUsername();
+        $guestPassword = $this->settingsService->getPassword();
 
         if (empty($externalUrl) || empty($guestUser) || empty($guestPassword)) {
             return [
