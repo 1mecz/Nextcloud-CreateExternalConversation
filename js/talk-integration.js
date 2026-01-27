@@ -244,21 +244,32 @@
 
     function handleAddParticipant(modal, federatedId) {
         // Get token at the time of adding (might have loaded by now)
-        const token = getConversationToken();
+        const localToken = getConversationToken();
 
-        if (!token) {
+        if (!localToken) {
             modal.querySelector('#error-container').style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: Could not find conversation token. Please reload the page.';
             return;
         }
 
-        console.log('[CreateExternalConversation] handleAddParticipant - token:', token, 'federatedId:', federatedId);
+        // Try to find external token from localStorage
+        const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+        const externalToken = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
+
+        if (!externalToken) {
+            modal.querySelector('#error-container').style.display = 'block';
+            modal.querySelector('#error-message').textContent = 'Error: Could not find external conversation token. This conversation may not be an external conversation.';
+            return;
+        }
+
+        console.log('[CreateExternalConversation] handleAddParticipant - localToken:', localToken, 'externalToken:', externalToken, 'federatedId:', federatedId);
 
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
 
-        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(token)}/participants?format=json`;
+        // Use external token instead of local token
+        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/participants?format=json`;
         console.log('[CreateExternalConversation] Calling:', url);
 
         // Make request to add participant
@@ -473,6 +484,19 @@
                 errorContainer.style.display = 'none';
                 modal.querySelector('#result-link').value = data.ocs.data.link;
                 modal.querySelector('#participants-count').textContent = data.ocs.data.participantsAdded || 0;
+
+                // Store external token in localStorage for later use when adding participants
+                if (data.ocs.data.token) {
+                    const externalToken = data.ocs.data.token;
+                    const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                    externalTokens[externalToken] = {
+                        token: externalToken,
+                        createdAt: new Date().toISOString(),
+                        link: data.ocs.data.link,
+                    };
+                    localStorage.setItem('externalConversationTokens', JSON.stringify(externalTokens));
+                    console.log('[CreateExternalConversation] Stored external token:', externalToken);
+                }
 
                 // Try to refresh Talk conversations without full page reload
                 refreshTalkList();
