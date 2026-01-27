@@ -123,8 +123,8 @@
             </div>
         `;
 
-        // Add modal to document (after body content)
-        document.documentElement.appendChild(modal);
+        // Add modal to document (with highest z-index)
+        document.body.appendChild(modal);
 
         // Store selected participant
         const selectedParticipants = new Set();
@@ -631,37 +631,38 @@
             }
 
             .create-external-conversation-modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                z-index: 999999 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             }
 
             .modal-overlay {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(0, 0, 0, 0.5);
-                cursor: pointer;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background-color: rgba(0, 0, 0, 0.5) !important;
+                cursor: pointer !important;
             }
 
             .modal-content {
-                position: relative;
-                background-color: white;
-                border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-                max-width: 500px;
-                width: 90%;
-                max-height: 80vh;
-                overflow-y: auto;
+                position: relative !important;
+                background-color: white !important;
+                border-radius: 8px !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+                max-width: 500px !important;
+                width: 90% !important;
+                max-height: 80vh !important;
+                overflow-y: auto !important;
+                z-index: 1000000 !important;
             }
 
             .modal-header {
