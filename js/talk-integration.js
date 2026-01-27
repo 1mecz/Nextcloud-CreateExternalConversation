@@ -281,31 +281,15 @@
                 return;
             }
 
-            const conversationName = localConversation.displayName || localConversation.name;
-            console.log('[CreateExternalConversation] Found local conversation:', conversationName);
-
-            // Call backend API to get room link by name
-            fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/room-link?name=${encodeURIComponent(conversationName)}&format=json`, {
-                headers: {
-                    'OCS-APIRequest': 'true',
-                    'requesttoken': OC.requestToken,
-                },
-            })
-            .then(response => response.json())
-            .then(roomData => {
-                const token = roomData.ocs?.data?.token;
-                if (token) {
-                    console.log('[CreateExternalConversation] Found external room token:', token);
-                    callback(token);
-                } else {
-                    console.log('[CreateExternalConversation] No matching room found');
-                    callback(null);
-                }
-            })
-            .catch(error => {
-                console.error('[CreateExternalConversation] Error getting room link:', error);
+            // Get remoteToken directly from local conversation data
+            const remoteToken = localConversation.remoteToken;
+            if (remoteToken) {
+                console.log('[CreateExternalConversation] Found remote token:', remoteToken);
+                callback(remoteToken);
+            } else {
+                console.log('[CreateExternalConversation] No remote token found in conversation');
                 callback(null);
-            });
+            }
         })
         .catch(error => {
             console.error('[CreateExternalConversation] Error fetching local conversation:', error);
