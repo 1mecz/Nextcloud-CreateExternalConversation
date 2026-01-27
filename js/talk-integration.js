@@ -123,7 +123,8 @@
             </div>
         `;
 
-        document.body.appendChild(modal);
+        // Add modal to document (after body content)
+        document.documentElement.appendChild(modal);
 
         // Store selected participant
         const selectedParticipants = new Set();
