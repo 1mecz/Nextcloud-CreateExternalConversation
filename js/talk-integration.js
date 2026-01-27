@@ -33,14 +33,19 @@
     function addParticipantButton() {
         try {
             const wrapper = document.querySelector('.top-bar__wrapper');
+            console.log('[CreateExternalConversation] addParticipantButton called, wrapper found:', !!wrapper);
             if (!wrapper) {
+                console.log('[CreateExternalConversation] No wrapper found');
                 return;
             }
 
             // Check if button already exists
             if (wrapper.querySelector('.add-external-participant-btn')) {
+                console.log('[CreateExternalConversation] Button already exists');
                 return;
             }
+
+            console.log('[CreateExternalConversation] Creating button');
 
             // Create button with text
             const button = document.createElement('button');
@@ -54,6 +59,7 @@
             
             // Append to wrapper
             wrapper.appendChild(button);
+            console.log('[CreateExternalConversation] Button added successfully');
         } catch (e) {
             console.error('[CreateExternalConversation] Error adding participant button:', e);
         }
