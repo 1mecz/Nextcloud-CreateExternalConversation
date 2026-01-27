@@ -216,59 +216,89 @@
 
         const serverHost = window.location.hostname;
 
-        // First try our app route (no subadmin rights needed)
-        const appUrl = OC.generateUrl('/apps/create_external_conversation/local-users') + `?search=${encodeURIComponent(query)}&format=json`;
-        fetch(appUrl, {
+        // 1) Try sharees search (works for běžné uživatele)
+        fetch(`/ocs/v2.php/apps/files_sharing/api/v1/sharees?format=json&search=${encodeURIComponent(query)}&perPage=30`, {
             credentials: 'same-origin',
             headers: {
+                'OCS-APIRequest': 'true',
                 'Accept': 'application/json',
                 'requesttoken': OC.requestToken,
             },
         })
         .then(resp => {
-            if (!resp.ok) throw new Error('app-http');
+            if (!resp.ok) throw new Error('sharees-http');
             return resp.json();
         })
         .then(data => {
-            if (data?.users) {
-                displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
-                return;
+            const users = data?.ocs?.data?.users || [];
+            if (Array.isArray(users)) {
+                const mapped = users
+                    .map(u => ({ id: u.value?.shareWith || u.label, displayName: u.label || u.value?.shareWith, federatedId: `${(u.value?.shareWith || u.label)}@${serverHost}` }))
+                    .filter(u => u.id && u.id !== OC.currentUser);
+
+                if (mapped.length > 0) {
+                    displaySearchResults(mapped, resultsContainer, selectedParticipants, selectedContainer);
+                    return;
+                }
             }
-            throw new Error('app-invalid');
+            throw new Error('sharees-empty');
         })
         .catch(() => {
-            // Fallback to provisioning API (may require subadmin)
-            fetch(`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&format=json`, {
+            // 2) Try our app route (no subadmin rights needed)
+            const appUrl = OC.generateUrl('/apps/create_external_conversation/local-users') + `?search=${encodeURIComponent(query)}&format=json`;
+            fetch(appUrl, {
                 credentials: 'same-origin',
                 headers: {
-                    'OCS-APIRequest': 'true',
                     'Accept': 'application/json',
                     'requesttoken': OC.requestToken,
                 },
             })
-            .then(response => {
-                if (!response.ok) throw new Error('ocs-failed');
-                return response.json();
+            .then(resp => {
+                if (!resp.ok) throw new Error('app-http');
+                return resp.json();
             })
             .then(data => {
-                const statusCode = data?.ocs?.meta?.statuscode;
-                const statusText = data?.ocs?.meta?.status;
-                const rawUsers = data?.ocs?.data?.users;
-
-                if ((statusCode === 100 || statusCode === 200 || statusText === 'ok') && Array.isArray(rawUsers)) {
-                    const users = rawUsers
-                        .map(u => (typeof u === 'string' ? { id: u, displayName: u, federatedId: `${u}@${serverHost}` } : { id: u.id, displayName: u.displayname || u.id, federatedId: `${u.id}@${serverHost}` }))
-                        .filter(u => u.id && u.id !== OC.currentUser);
-
-                    displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
+                if (data?.users) {
+                    displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
                     return;
                 }
-                throw new Error('ocs-invalid');
+                throw new Error('app-invalid');
             })
-            .catch(error => {
-                console.error('[CreateExternalConversation] Search error:', error);
-                resultsContainer.innerHTML = '<div class="search-result-item">No results (need subadmin?)</div>';
-                resultsContainer.style.display = 'block';
+            .catch(() => {
+                // 3) Fallback to provisioning API (may require subadmin)
+                fetch(`/ocs/v2.php/cloud/users?search=${encodeURIComponent(query)}&format=json`, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'OCS-APIRequest': 'true',
+                        'Accept': 'application/json',
+                        'requesttoken': OC.requestToken,
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('ocs-failed');
+                    return response.json();
+                })
+                .then(data => {
+                    const statusCode = data?.ocs?.meta?.statuscode;
+                    const statusText = data?.ocs?.meta?.status;
+                    const rawUsers = data?.ocs?.data?.users;
+
+                    if ((statusCode === 100 || statusCode === 200 || statusText === 'ok') && Array.isArray(rawUsers)) {
+                        const users = rawUsers
+                            .map(u => (typeof u === 'string' ? { id: u, displayName: u, federatedId: `${u}@${serverHost}` } : { id: u.id, displayName: u.displayname || u.id, federatedId: `${u.id}@${serverHost}` }))
+                            .filter(u => u.id && u.id !== OC.currentUser);
+
+                        if (users.length > 0) {
+                            displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
+                            return;
+                        }
+                    }
+                    throw new Error('ocs-invalid');
+                })
+                .catch(() => {
+                    resultsContainer.innerHTML = '<div class="search-result-item">No results (insufficient rights?)</div>';
+                    resultsContainer.style.display = 'block';
+                });
             });
         });
     }
