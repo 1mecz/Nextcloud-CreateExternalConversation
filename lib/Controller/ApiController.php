@@ -161,13 +161,6 @@ class ApiController extends OCSController {
      * @NoCSRFRequired
      */
     public function addParticipant(string $token = ''): DataResponse {
-        // DEBUG: Return immediately to test if endpoint is even called
-        return new DataResponse([
-            'debug' => 'addParticipant endpoint called!',
-            'token' => $token,
-        ]);
-
-        // Rest of the code below...
         $token = trim($token);
         
         // Extract federatedId from request body

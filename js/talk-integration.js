@@ -339,7 +339,12 @@
         })
         .then(data => {
             console.log('[CreateExternalConversation] Response data:', data);
-            if (data && data.ocs && data.ocs.data && data.ocs.data.success) {
+            
+            // Check if response has expected structure
+            const success = data?.ocs?.data?.success;
+            const hasError = data?.ocs?.data?.error;
+            
+            if (success) {
                 form.style.display = 'none';
                 resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
@@ -347,9 +352,11 @@
 
                 // Close modal after 2 seconds
                 setTimeout(() => modal.remove(), 2000);
+            } else if (hasError) {
+                throw new Error(data.ocs.data.error);
             } else {
-                const error = data && data.ocs && data.ocs.data ? data.ocs.data.error : (data && data.ocs && data.ocs.meta ? data.ocs.meta.message : 'Unknown error');
-                throw new Error(error);
+                console.error('[CreateExternalConversation] Unexpected response structure:', data);
+                throw new Error('Unexpected response structure from server');
             }
         })
         .catch(error => {
