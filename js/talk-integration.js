@@ -713,6 +713,41 @@
                 fill: currentColor;
             }
 
+            .create-external-conversation-modal {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                z-index: 10000 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            }
+
+            .create-external-conversation-modal .modal-overlay {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background-color: rgba(0, 0, 0, 0.5) !important;
+                cursor: pointer !important;
+            }
+
+            .create-external-conversation-modal .modal-content {
+                position: relative !important;
+                background-color: white !important;
+                border-radius: 8px !important;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+                max-width: 500px !important;
+                width: 90% !important;
+                max-height: 80vh !important;
+                overflow-y: auto !important;
+                z-index: 1000000 !important;
+            }
+
             .add-participant-modal-overlay {
                 /* Inline styled in JavaScript */
             }
