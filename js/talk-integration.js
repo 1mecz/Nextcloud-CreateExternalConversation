@@ -21,40 +21,52 @@
 
         // Add button to top-bar for adding participants to existing conversations
         addParticipantButton();
+
+        // Watch for URL changes (SPA navigation)
+        window.addEventListener('hashchange', () => {
+            console.log('[CreateExternalConversation] Hash changed, checking for top-bar');
+            setTimeout(addParticipantButton, 100);
+        });
     }
 
     function addParticipantButton() {
-        // Watch for top-bar__wrapper and inject button - retry every 500ms until found
-        let attempts = 0;
-        const checkInterval = setInterval(() => {
-            attempts++;
-            const wrapper = document.querySelector('.top-bar__wrapper');
-            if (!wrapper || attempts > 60) { // Stop after 30 seconds
-                if (attempts > 60) clearInterval(checkInterval);
-                return;
-            }
+        const wrapper = document.querySelector('.top-bar__wrapper');
+        console.log('[CreateExternalConversation] addParticipantButton - wrapper found:', !!wrapper);
 
-            // Try to find if conversation exists
-            if (!getConversationToken()) {
-                return; // Not in conversation yet
-            }
+        if (!wrapper) {
+            console.log('[CreateExternalConversation] top-bar__wrapper not found');
+            return;
+        }
 
-            clearInterval(checkInterval);
-            console.log('[CreateExternalConversation] Found top-bar__wrapper and conversation, adding participant button');
+        const token = getConversationToken();
+        console.log('[CreateExternalConversation] Conversation token:', token);
 
-            // Create button with text
-            const button = document.createElement('button');
-            button.className = 'add-external-participant-btn';
-            button.type = 'button';
-            button.title = 'Add participant';
-            button.setAttribute('aria-label', 'Add participant');
-            button.textContent = '+ Add';
+        if (!token) {
+            console.log('[CreateExternalConversation] No conversation token found');
+            return;
+        }
 
-            button.addEventListener('click', showAddParticipantModal);
-            
-            // Append to wrapper
-            wrapper.appendChild(button);
-        }, 500);
+        // Check if button already exists
+        if (wrapper.querySelector('.add-external-participant-btn')) {
+            console.log('[CreateExternalConversation] Button already exists');
+            return;
+        }
+
+        console.log('[CreateExternalConversation] Adding participant button to wrapper');
+
+        // Create button with text
+        const button = document.createElement('button');
+        button.className = 'add-external-participant-btn';
+        button.type = 'button';
+        button.title = 'Add participant';
+        button.setAttribute('aria-label', 'Add participant');
+        button.textContent = '+ Add';
+
+        button.addEventListener('click', showAddParticipantModal);
+        
+        // Append to wrapper
+        wrapper.appendChild(button);
+        console.log('[CreateExternalConversation] Button added to wrapper');
     }
 
     function getConversationToken() {
