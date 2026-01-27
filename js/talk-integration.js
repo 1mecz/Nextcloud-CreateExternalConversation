@@ -298,54 +298,36 @@
             const conversationName = localConversation.displayName || localConversation.name;
             console.log('[CreateExternalConversation] Found local conversation:', conversationName);
 
-            // Now search on external server using our API
-            fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/users?format=json`, {
+            // Call backend API to find matching room on external server
+            fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/search-rooms?name=${encodeURIComponent(conversationName)}&format=json`, {
                 headers: {
                     'OCS-APIRequest': 'true',
                     'requesttoken': OC.requestToken,
                 },
             })
             .then(response => response.json())
-            .then(externalRoomsData => {
-                // This is actually getting users, but we need rooms
-                // Let's use a different approach - call backend to search for rooms
-                console.log('[CreateExternalConversation] Need to search for rooms on external server');
-                
-                // Call backend API to find matching room
-                fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/search-rooms?name=${encodeURIComponent(conversationName)}&format=json`, {
-                    headers: {
-                        'OCS-APIRequest': 'true',
-                        'requesttoken': OC.requestToken,
-                    },
-                })
-                .then(response => response.json())
-                .then(roomsData => {
-                    const rooms = roomsData.ocs?.data?.rooms || [];
-                    if (rooms.length > 0) {
-                        const externalToken = rooms[0].token;
-                        console.log('[CreateExternalConversation] Found external room:', externalToken);
-                        
-                        // Store in localStorage
-                        const stored = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
-                        stored[externalToken] = {
-                            token: externalToken,
-                            createdAt: new Date().toISOString(),
-                        };
-                        localStorage.setItem('externalConversationTokens', JSON.stringify(stored));
-                        
-                        callback(externalToken);
-                    } else {
-                        console.log('[CreateExternalConversation] No matching rooms found');
-                        callback(null);
-                    }
-                })
-                .catch(error => {
-                    console.error('[CreateExternalConversation] Error searching rooms:', error);
+            .then(roomsData => {
+                const rooms = roomsData.ocs?.data?.rooms || [];
+                if (rooms.length > 0) {
+                    const externalToken = rooms[0].token;
+                    console.log('[CreateExternalConversation] Found external room:', externalToken);
+                    
+                    // Store in localStorage
+                    const stored = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                    stored[externalToken] = {
+                        token: externalToken,
+                        createdAt: new Date().toISOString(),
+                    };
+                    localStorage.setItem('externalConversationTokens', JSON.stringify(stored));
+                    
+                    callback(externalToken);
+                } else {
+                    console.log('[CreateExternalConversation] No matching rooms found');
                     callback(null);
-                });
+                }
             })
             .catch(error => {
-                console.error('[CreateExternalConversation] Error fetching external data:', error);
+                console.error('[CreateExternalConversation] Error searching rooms:', error);
                 callback(null);
             });
         })
