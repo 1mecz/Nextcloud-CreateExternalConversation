@@ -33,6 +33,13 @@
         const wrapper = document.querySelector('.top-bar__wrapper');
         console.log('[CreateExternalConversation] addParticipantButton - wrapper found:', !!wrapper);
 
+        // Debug: find all top-bar related elements
+        const topBarElements = document.querySelectorAll('[class*="top-bar"]');
+        console.log('[CreateExternalConversation] Found elements with "top-bar" class:', topBarElements.length);
+        topBarElements.forEach((el, i) => {
+            console.log(`  [${i}] ${el.className}`);
+        });
+
         if (!wrapper) {
             console.log('[CreateExternalConversation] top-bar__wrapper not found');
             return;
