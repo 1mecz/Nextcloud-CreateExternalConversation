@@ -24,40 +24,73 @@
     }
 
     function addParticipantButton() {
-        // Watch for top-bar and inject button
+        // Watch for top-bar and inject button - retry every 500ms until found
+        let attempts = 0;
         const checkInterval = setInterval(() => {
+            attempts++;
             const topBar = document.querySelector('.top-bar.top-bar--authorised');
-            if (!topBar) {
-                return; // Wait for top-bar to appear
+            if (!topBar || attempts > 60) { // Stop after 30 seconds
+                if (attempts > 60) clearInterval(checkInterval);
+                return;
+            }
+
+            // Try to find if conversation exists
+            if (!getConversationToken()) {
+                return; // Not in conversation yet
             }
 
             clearInterval(checkInterval);
-            console.log('[CreateExternalConversation] Found top-bar, adding participant button');
+            console.log('[CreateExternalConversation] Found top-bar and conversation, adding participant button');
 
-            // Create button
+            // Find action buttons container (right side of top-bar)
+            const actionsContainer = topBar.querySelector('[class*="call-button"]') || topBar.lastElementChild;
+            
+            // Create button with proper icon
             const button = document.createElement('button');
-            button.className = 'add-external-participant-btn top-bar-button';
+            button.className = 'add-external-participant-btn';
             button.type = 'button';
-            button.title = 'Add participant from local Nextcloud';
+            button.title = 'Add participant';
+            button.setAttribute('aria-label', 'Add participant');
             button.innerHTML = `
-                <svg class="material-design-icon__svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M13,7H11V11H7V13H11V17H13V13H17V11H13V7Z"/>
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon">
+                    <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 4c-2.33 0-7 1.17-7 3.5V19h14v-1.5c0-2.33-4.67-3.5-7-3.5zm9 0c-.29 0-.62.02-.97.05 1.16.64 1.7 1.73 1.7 2.45V19h6v-1.5c0-2.33-4.67-3.5-7-3.5z"/>
                 </svg>
-                <span class="text">Add participant</span>
             `;
 
             button.addEventListener('click', showAddParticipantModal);
-            topBar.appendChild(button);
-        }, 100);
+            
+            // Insert before other action buttons or at end
+            if (actionsContainer?.parentElement) {
+                topBar.insertBefore(button, actionsContainer);
+            } else {
+                topBar.appendChild(button);
+            }
+        }, 500);
+    }
+
+    function getConversationToken() {
+        // Try multiple ways to get token
+        const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token;
+        if (token) return token;
+
+        // Try from URL hash: #conversation/BKXYZ
+        const hashMatch = window.location.hash.match(/#conversation\/([^/]+)/);
+        if (hashMatch?.[1]) return hashMatch[1];
+
+        // Try from data attribute on conversation element
+        const convElement = document.querySelector('[data-conversation-token]');
+        if (convElement) return convElement.getAttribute('data-conversation-token');
+
+        return null;
     }
 
     function showAddParticipantModal() {
         // Get current conversation token from Talk
-        const token = window.OCA?.Talk?.store?.getters?.currentConversation?.token ||
-                      window.location.hash.match(/#conversation\/([^/]+)/)?.[1];
+        const token = getConversationToken();
 
         if (!token) {
-            alert('Could not find conversation token');
+            console.error('[CreateExternalConversation] Could not find conversation token');
+            alert('Could not find conversation token. Please reload the page.');
             return;
         }
 
@@ -840,6 +873,31 @@
 
             .add-external-participant-btn .text {
                 display: inline;
+            }
+
+            .add-external-participant-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 44px;
+                background: none;
+                border: none;
+                color: var(--color-text, #333);
+                cursor: pointer;
+                transition: opacity 0.2s;
+                padding: 0;
+                margin: 0;
+            }
+
+            .add-external-participant-btn:hover {
+                opacity: 0.5;
+            }
+
+            .add-external-participant-btn .icon {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
             }
         `;
 
