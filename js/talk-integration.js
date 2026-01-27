@@ -20,12 +20,13 @@
         addButtonToDashboard();
 
         // Add button to top-bar for adding participants to existing conversations
-        addParticipantButton();
+        // Delay initial call to allow Talk to load conversation
+        setTimeout(() => addParticipantButton(), 1000);
 
         // Watch for URL changes (SPA navigation)
         window.addEventListener('hashchange', () => {
-            console.log('[CreateExternalConversation] Hash changed, checking for top-bar');
-            setTimeout(addParticipantButton, 100);
+            console.log('[CreateExternalConversation] Hash changed to:', window.location.hash);
+            setTimeout(addParticipantButton, 500);
         });
     }
 
