@@ -87,52 +87,96 @@
     }
 
     function showAddParticipantModal() {
-        // Create modal
+        // Create modal using inline styles like in federatedtalklink
         const modal = document.createElement('div');
-        modal.className = 'add-participant-modal';
-        modal.innerHTML = `
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Add Participant</h2>
-                    <button class="modal-close">&times;</button>
+        modal.className = 'add-participant-modal-overlay';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'add-participant-modal-content';
+        modalContent.style.cssText = `
+            background: var(--color-main-background, white);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+
+        modalContent.innerHTML = `
+            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">Add Participant</h2>
+            <form id="add-participant-form">
+                <div class="form-group">
+                    <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">Search users</label>
+                    <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off" style="
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                    ">
+                    <div id="participant-search-results" class="search-results" style="display: none; margin-top: 8px;"></div>
+                    <div id="selected-participants" class="selected-participants" style="margin-top: 12px;"></div>
                 </div>
-                <div class="modal-body">
-                    <form id="add-participant-form">
-                        <div class="form-group">
-                            <label for="participant-search">Search users</label>
-                            <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off">
-                            <div id="participant-search-results" class="search-results" style="display: none;"></div>
-                            <div id="selected-participants" class="selected-participants"></div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Add</button>
-                            <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                        </div>
-                    </form>
-                    <div id="result-container" style="display: none;" class="result-container">
-                        <div class="result-success">
-                            <p><strong>Success!</strong></p>
-                            <p>Participant added: <span id="added-participant"></span></p>
-                        </div>
-                    </div>
-                    <div id="error-container" style="display: none;" class="error-container">
-                        <p id="error-message"></p>
-                    </div>
+                <div style="display: flex; gap: 10px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-primary" style="
+                        flex: 1;
+                        padding: 10px 16px;
+                        border: none;
+                        border-radius: 6px;
+                        background: var(--color-primary, #0082c9);
+                        color: white;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">Add</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-btn" style="
+                        flex: 1;
+                        padding: 10px 16px;
+                        border: 1px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        background: transparent;
+                        cursor: pointer;
+                        font-weight: 500;
+                    ">Cancel</button>
+                </div>
+            </form>
+            <div id="result-container" style="display: none; margin-top: 20px;">
+                <div class="result-success" style="padding: 12px; background: var(--color-success-light, #f0f9ff); border-radius: 6px; color: var(--color-success, #46ba61);">
+                    <p style="margin: 0 0 8px 0;"><strong>Success!</strong></p>
+                    <p style="margin: 0;">Participant added: <span id="added-participant"></span></p>
+                </div>
+            </div>
+            <div id="error-container" style="display: none; margin-top: 20px;">
+                <div style="padding: 12px; background: var(--color-error-light, #fff5f5); border-radius: 6px; color: var(--color-error, #e74c3c);">
+                    <p id="error-message" style="margin: 0;"></p>
                 </div>
             </div>
         `;
 
-        // Add modal to document (with highest z-index)
+        modal.appendChild(modalContent);
         document.body.appendChild(modal);
 
         // Store selected participant
         const selectedParticipants = new Set();
 
         // Handle participant search
-        const searchInput = modal.querySelector('#participant-search');
-        const searchResults = modal.querySelector('#participant-search-results');
-        const selectedContainer = modal.querySelector('#selected-participants');
+        const searchInput = modalContent.querySelector('#participant-search');
+        const searchResults = modalContent.querySelector('#participant-search-results');
+        const selectedContainer = modalContent.querySelector('#selected-participants');
         
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
@@ -150,17 +194,21 @@
         });
 
         // Handle close
-        modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-        modal.querySelector('.modal-overlay').addEventListener('click', () => modal.remove());
-        modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        modalContent.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
 
         // Handle form submit
-        const form = modal.querySelector('#add-participant-form');
+        const form = modalContent.querySelector('#add-participant-form');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (selectedParticipants.size === 0) {
-                modal.querySelector('#error-container').style.display = 'block';
-                modal.querySelector('#error-message').textContent = 'Please select a participant';
+                const errorContainer = modalContent.querySelector('#error-container');
+                errorContainer.style.display = 'block';
+                modalContent.querySelector('#error-message').textContent = 'Please select a participant';
                 return;
             }
             const participant = Array.from(selectedParticipants)[0];
@@ -630,39 +678,12 @@
                 fill: currentColor;
             }
 
-            .add-participant-modal {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                z-index: 999999 !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            .add-participant-modal-overlay {
+                /* Inline styled in JavaScript */
             }
 
-            .add-participant-modal .modal-overlay {
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                background-color: rgba(0, 0, 0, 0.5) !important;
-                cursor: pointer !important;
-            }
-
-            .add-participant-modal .modal-content {
-                position: relative !important;
-                background-color: white !important;
-                border-radius: 8px !important;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
-                max-width: 500px !important;
-                width: 90% !important;
-                max-height: 80vh !important;
-                overflow-y: auto !important;
-                z-index: 1000000 !important;
+            .add-participant-modal-content {
+                /* Inline styled in JavaScript */
             }
 
             .modal-header {
