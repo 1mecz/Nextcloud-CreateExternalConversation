@@ -199,12 +199,21 @@ class ConversationService {
             
             $this->logger->info('Response from external server', [
                 'app' => 'create_external_conversation',
+                'statusCode' => $response->getStatusCode(),
                 'body' => substr($body, 0, 500),
                 'decoded' => $responseData,
             ]);
             
             // Check if response indicates success
-            $statuscode = $responseData['ocs']['meta']['statuscode'] ?? null;
+            if (empty($responseData)) {
+                throw new \Exception('Empty response from external server');
+            }
+            
+            if (!isset($responseData['ocs']['meta']['statuscode'])) {
+                throw new \Exception('Invalid response structure from external server: ' . json_encode($responseData));
+            }
+            
+            $statuscode = $responseData['ocs']['meta']['statuscode'];
             if ($statuscode !== 200) {
                 $message = $responseData['ocs']['meta']['message'] ?? 'Unknown error';
                 throw new \Exception('Talk API error: ' . $message . ' (status: ' . $statuscode . ')');
