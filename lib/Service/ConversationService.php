@@ -378,4 +378,138 @@ class ConversationService {
         
         return json_decode($body, true) ?? [];
     }
-}
+
+    /**
+     * Get external conversation token for a local conversation
+     * by fetching the room name and searching on external server
+     */
+    public function getExternalTokenForConversation(string $localToken): array {
+        if (!$this->settingsService->isConfigured()) {
+            return [
+                'success' => false,
+                'error' => 'App is not configured.',
+            ];
+        }
+
+        try {
+            // Step 1: Fetch the local room info from Talk API
+            $localUrl = '/ocs/v2.php/apps/spreed/api/v4/room/' . $localToken;
+            $localRoom = $this->fetchLocalRoom($localToken);
+
+            if (!$localRoom) {
+                return [
+                    'success' => false,
+                    'error' => 'Local conversation not found.',
+                ];
+            }
+
+            $conversationName = $localRoom['displayName'] ?? $localRoom['name'] ?? null;
+            
+            if (!$conversationName) {
+                return [
+                    'success' => false,
+                    'error' => 'Could not determine conversation name.',
+                ];
+            }
+
+            $this->logger->info('Found local room', [
+                'app' => 'create_external_conversation',
+                'token' => $localToken,
+                'name' => $conversationName,
+            ]);
+
+            // Step 2: Fetch rooms from external server
+            $externalUrl = $this->settingsService->getExternalUrl();
+            $roomsUrl = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
+
+            $data = [];
+            $response = $this->makeRequest('GET', $roomsUrl, $data, false);
+
+            if (!isset($response['ocs']['data']) || !is_array($response['ocs']['data'])) {
+                return [
+                    'success' => false,
+                    'error' => 'Failed to fetch rooms from external server.',
+                ];
+            }
+
+            // Step 3: Search for matching room by name
+            foreach ($response['ocs']['data'] as $room) {
+                $externalName = $room['displayName'] ?? $room['name'] ?? null;
+                
+                // Check if names match
+                if ($externalName && strcasecmp($externalName, $conversationName) === 0) {
+                    $externalToken = $room['token'] ?? null;
+                    
+                    if ($externalToken) {
+                        $this->logger->info('Found matching external room', [
+                            'app' => 'create_external_conversation',
+                            'localToken' => $localToken,
+                            'externalToken' => $externalToken,
+                            'name' => $conversationName,
+                        ]);
+
+                        return [
+                            'success' => true,
+                            'externalToken' => $externalToken,
+                            'conversationName' => $conversationName,
+                        ];
+                    }
+                }
+            }
+
+            $this->logger->warning('No matching external room found', [
+                'app' => 'create_external_conversation',
+                'localToken' => $localToken,
+                'conversationName' => $conversationName,
+                'availableRooms' => count($response['ocs']['data']),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Could not find matching conversation on external server. Make sure the conversation name matches exactly.',
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get external token', [
+                'app' => 'create_external_conversation',
+                'localToken' => $localToken,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Error: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Fetch local room info from Talk API
+     */
+    private function fetchLocalRoom(string $token): ?array {
+        try {
+            $url = 'http://localhost/ocs/v2.php/apps/spreed/api/v4/room/' . $token;
+            
+            // Use local Nextcloud API without authentication (internal request)
+            $client = $this->clientService->newClient();
+            $response = $client->request('GET', $url, [
+                'headers' => [
+                    'OCS-APIRequest' => 'true',
+                    'Accept' => 'application/json',
+                ],
+            ]);
+
+            $body = $response->getBody();
+            $data = json_decode($body, true) ?? [];
+
+            return $data['ocs']['data'] ?? null;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to fetch local room', [
+                'app' => 'create_external_conversation',
+                'token' => $token,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }

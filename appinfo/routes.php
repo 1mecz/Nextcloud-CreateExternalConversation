@@ -66,5 +66,10 @@ return [
             'url' => '/api/v1/conversation/{token}/participants',
             'verb' => 'POST',
         ],
-    ],
-];
+
+        // OCS API endpoint to get external token for a local conversation
+        [
+            'name' => 'api#getExternalToken',
+            'url' => '/api/v1/conversation/{token}/external-token',
+            'verb' => 'GET',
+        ],

@@ -277,4 +277,35 @@ class ApiController extends OCSController {
             );
         }
     }
-}
+
+    /**
+     * Get external conversation token for a local conversation
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function getExternalToken(string $token = ''): DataResponse {
+        $token = trim($token);
+
+        if (empty($token)) {
+            return new DataResponse(
+                ['error' => 'Token is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $result = $this->conversationService->getExternalTokenForConversation($token);
+
+        if (!$result['success']) {
+            return new DataResponse(
+                ['error' => $result['error'] ?? 'Failed to get external token'],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return new DataResponse([
+            'success' => true,
+            'externalToken' => $result['externalToken'],
+            'conversationName' => $result['conversationName'] ?? null,
+        ]);
+    }

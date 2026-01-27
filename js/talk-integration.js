@@ -257,12 +257,18 @@
         const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
         externalToken = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
 
-        // If not found in localStorage, prompt user to enter external conversation ID
+        // If not found in localStorage, try to fetch it from API
         if (!externalToken) {
-            showExternalTokenModal((token) => {
+            fetchExternalTokenFromAPI(localToken, (token) => {
                 if (token) {
-                    // Retry with provided token
                     addParticipantToExternalConversation(modal, federatedId, token);
+                } else {
+                    // Fallback to manual input modal
+                    showExternalTokenModal((manualToken) => {
+                        if (manualToken) {
+                            addParticipantToExternalConversation(modal, federatedId, manualToken);
+                        }
+                    });
                 }
             });
             return;
@@ -270,6 +276,50 @@
 
         console.log('[CreateExternalConversation] handleAddParticipant - localToken:', localToken, 'externalToken:', externalToken, 'federatedId:', federatedId);
         addParticipantToExternalConversation(modal, federatedId, externalToken);
+    }
+
+    function fetchExternalTokenFromAPI(localToken, callback) {
+        const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(localToken)}/external-token?format=json`;
+        console.log('[CreateExternalConversation] Fetching external token from API:', url);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'OCS-APIRequest': 'true',
+                'requesttoken': OC.requestToken,
+            },
+        })
+        .then(response => {
+            console.log('[CreateExternalConversation] External token API response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('[CreateExternalConversation] External token API response data:', data);
+            if (data.ocs.meta.statuscode === 200 && data.ocs.data.success && data.ocs.data.externalToken) {
+                const externalToken = data.ocs.data.externalToken;
+                console.log('[CreateExternalConversation] Got external token:', externalToken);
+                
+                // Store it in localStorage for future use
+                const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                if (!externalTokens[externalToken]) {
+                    externalTokens[externalToken] = {
+                        token: externalToken,
+                        createdAt: new Date().toISOString(),
+                    };
+                    localStorage.setItem('externalConversationTokens', JSON.stringify(externalTokens));
+                    console.log('[CreateExternalConversation] Stored external token:', externalToken);
+                }
+                
+                callback(externalToken);
+            } else {
+                console.log('[CreateExternalConversation] Failed to get external token:', data.ocs.data.error || 'Unknown error');
+                callback(null);
+            }
+        })
+        .catch(error => {
+            console.error('[CreateExternalConversation] Error fetching external token:', error);
+            callback(null);
+        });
     }
 
     function addParticipantToExternalConversation(modal, federatedId, externalToken) {
