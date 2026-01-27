@@ -179,30 +179,39 @@ class ApiController extends OCSController {
         }
 
         try {
-            // Search for users
-            $foundUsers = $this->userManager->searchDisplayName($search, 20);
-            
             $users = [];
             $serverHost = $this->request->getServerHost();
             
-            foreach ($foundUsers as $user) {
+            // Search by display name
+            $foundByDisplay = $this->userManager->searchDisplayName($search, 20);
+            foreach ($foundByDisplay as $user) {
                 $userId = $user->getUID();
-                
-                // Skip current user
-                if ($userId === $currentUser->getUID()) {
-                    continue;
-                }
-                
-                $users[] = [
+                $users[$userId] = [
                     'id' => $userId,
                     'displayName' => $user->getDisplayName(),
                     'federatedId' => $userId . '@' . $serverHost,
                 ];
             }
 
+            // Fallback search by userId/uid (some instances have empty display names)
+            $foundByUid = $this->userManager->search($search, 20);
+            foreach ($foundByUid as $user) {
+                $userId = $user->getUID();
+                if (!isset($users[$userId])) {
+                    $users[$userId] = [
+                        'id' => $userId,
+                        'displayName' => $user->getDisplayName() ?: $userId,
+                        'federatedId' => $userId . '@' . $serverHost,
+                    ];
+                }
+            }
+
+            // Remove current user from results
+            unset($users[$currentUser->getUID()]);
+
             return new DataResponse([
                 'success' => true,
-                'users' => $users
+                'users' => array_values($users)
             ]);
         } catch (\Exception $e) {
             return new DataResponse(
