@@ -342,3 +342,4 @@ class ApiController extends OCSController {
             'conversationName' => $result['conversationName'] ?? null,
         ]);
     }
+}
