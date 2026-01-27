@@ -82,6 +82,12 @@
                             <label for="conversation-name">Conversation Name</label>
                             <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name">
                         </div>
+                        <div class="form-group">
+                            <label for="participant-search">Add Participants (optional)</label>
+                            <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off">
+                            <div id="participant-search-results" class="search-results" style="display: none;"></div>
+                            <div id="selected-participants" class="selected-participants"></div>
+                        </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Create</button>
                             <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
@@ -90,7 +96,7 @@
                     <div id="result-container" style="display: none;" class="result-container">
                         <div class="result-success">
                             <p><strong>Success!</strong></p>
-                            <p>Conversation created:</p>
+                            <p>Conversation created with <span id="participants-count">0</span> participant(s)</p>
                             <input type="text" id="result-link" readonly class="result-link">
                             <div class="result-actions">
                                 <button type="button" class="btn btn-primary" id="copy-link-btn">Copy Link</button>
@@ -107,6 +113,29 @@
 
         document.body.appendChild(modal);
 
+        // Store selected participants
+        const selectedParticipants = new Set();
+
+        // Handle participant search
+        const searchInput = modal.querySelector('#participant-search');
+        const searchResults = modal.querySelector('#participant-search-results');
+        const selectedContainer = modal.querySelector('#selected-participants');
+        
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer);
+            }, 300);
+        });
+
         // Handle close
         modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
         modal.querySelector('.modal-overlay').addEventListener('click', () => modal.remove());
@@ -116,7 +145,7 @@
         const form = modal.querySelector('#create-external-conversation-form');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            handleCreateConversation(modal);
+            handleCreateConversation(modal, Array.from(selectedParticipants));
         });
 
         // Handle result actions
@@ -133,7 +162,7 @@
         });
     }
 
-    function handleCreateConversation(modal) {
+    function handleCreateConversation(modal, participants = []) {
         const conversationName = modal.querySelector('#conversation-name').value.trim();
         const form = modal.querySelector('#create-external-conversation-form');
         const resultContainer = modal.querySelector('#result-container');
@@ -145,11 +174,6 @@
             return;
         }
 
-        // Get current user's federated ID
-        const userId = OC.currentUser;
-        const serverName = window.location.hostname;
-        const federatedId = userId + '@' + serverName;
-
         // Make request to create conversation
         fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
             method: 'POST',
@@ -160,7 +184,7 @@
             },
             body: JSON.stringify({
                 conversationName: conversationName,
-                federatedId: federatedId,
+                participants: participants,
             }),
         })
         .then(response => response.json())
@@ -170,6 +194,7 @@
                 resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
                 modal.querySelector('#result-link').value = data.ocs.data.link;
+                modal.querySelector('#participants-count').textContent = data.ocs.data.participantsAdded || 0;
 
                 // Try to refresh Talk conversations without full page reload
                 refreshTalkList();
@@ -182,6 +207,70 @@
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
         });
+    }
+
+    function searchLocalUsers(query, resultsContainer, selectedParticipants, selectedContainer) {
+        fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/local-users?search=${encodeURIComponent(query)}&format=json`, {
+            headers: {
+                'OCS-APIRequest': 'true',
+                'requesttoken': OC.requestToken,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
+                displaySearchResults(data.ocs.data.users, resultsContainer, selectedParticipants, selectedContainer);
+            }
+        })
+        .catch(error => {
+            console.error('[CreateExternalConversation] Search error:', error);
+        });
+    }
+
+    function displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer) {
+        if (!users || users.length === 0) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+
+        resultsContainer.innerHTML = '';
+        users.forEach(user => {
+            if (selectedParticipants.has(user.federatedId)) {
+                return; // Skip already selected
+            }
+
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.textContent = `${user.displayName} (${user.id})`;
+            item.dataset.federatedId = user.federatedId;
+            item.dataset.displayName = user.displayName;
+            
+            item.addEventListener('click', () => {
+                selectedParticipants.add(user.federatedId);
+                addSelectedParticipant(user, selectedParticipants, selectedContainer);
+                resultsContainer.style.display = 'none';
+            });
+
+            resultsContainer.appendChild(item);
+        });
+
+        resultsContainer.style.display = 'block';
+    }
+
+    function addSelectedParticipant(user, selectedParticipants, selectedContainer) {
+        const chip = document.createElement('div');
+        chip.className = 'participant-chip';
+        chip.innerHTML = `
+            <span>${user.displayName}</span>
+            <button type="button" class="remove-participant">&times;</button>
+        `;
+        
+        chip.querySelector('.remove-participant').addEventListener('click', () => {
+            selectedParticipants.delete(user.federatedId);
+            chip.remove();
+        });
+
+        selectedContainer.appendChild(chip);
     }
 
     function refreshTalkList() {
@@ -427,6 +516,65 @@
 
             .error-container p {
                 margin: 0;
+            }
+
+            .search-results {
+                position: absolute;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                max-height: 200px;
+                overflow-y: auto;
+                width: calc(100% - 40px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                margin-top: 2px;
+            }
+
+            .search-result-item {
+                padding: 10px;
+                cursor: pointer;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .search-result-item:hover {
+                background-color: #f5f5f5;
+            }
+
+            .search-result-item:last-child {
+                border-bottom: none;
+            }
+
+            .selected-participants {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 10px;
+            }
+
+            .participant-chip {
+                display: inline-flex;
+                align-items: center;
+                background-color: var(--color-primary-light, #e3f2fd);
+                color: var(--color-primary-text, #0d47a1);
+                padding: 4px 8px;
+                border-radius: 16px;
+                font-size: 13px;
+                gap: 6px;
+            }
+
+            .participant-chip .remove-participant {
+                background: none;
+                border: none;
+                color: inherit;
+                font-size: 18px;
+                cursor: pointer;
+                padding: 0;
+                line-height: 1;
+            }
+
+            .participant-chip .remove-participant:hover {
+                opacity: 0.7;
             }
         `;
 

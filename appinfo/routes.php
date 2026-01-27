@@ -32,10 +32,17 @@ return [
             'verb' => 'POST',
         ],
 
-        // OCS API endpoint to search users
+        // OCS API endpoint to search users on external server
         [
             'name' => 'api#searchUsers',
             'url' => '/api/v1/users',
+            'verb' => 'GET',
+        ],
+
+        // OCS API endpoint to search local users (for inviting)
+        [
+            'name' => 'api#searchLocalUsers',
+            'url' => '/api/v1/local-users',
             'verb' => 'GET',
         ],
 

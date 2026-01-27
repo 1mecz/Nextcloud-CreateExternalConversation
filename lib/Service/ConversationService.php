@@ -24,12 +24,12 @@ class ConversationService {
      * Create a new conversation on external Nextcloud
      *
      * @param string $conversationName Name of the conversation
-     * @param string $currentUserFederatedId Federated ID of current user (user@domain)
+     * @param array $participants Array of federated IDs (user@domain)
      * @return array
      */
     public function createExternalConversation(
         string $conversationName,
-        string $currentUserFederatedId
+        array $participants = []
     ): array {
         if (!$this->settingsService->isConfigured()) {
             return [
@@ -57,19 +57,28 @@ class ConversationService {
             $token = $createResult['token'];
             $roomId = $createResult['roomId'];
 
-            // Step 2: Add current user as federated participant
-            $participantAdded = false;
+            // Step 2: Add participants
+            $participantsAdded = 0;
+            $participantsFailed = 0;
             
-            $result = $this->addFederatedParticipant($token, $currentUserFederatedId);
-            if ($result['success']) {
-                $participantAdded = true;
-            } else {
-                $this->logger->warning('Could not add federated participant automatically', [
-                    'app' => 'create_external_conversation',
-                    'federatedId' => $currentUserFederatedId,
-                    'error' => $result['error'] ?? 'Unknown error',
-                    'note' => 'User can still join via public link',
-                ]);
+            foreach ($participants as $federatedId) {
+                $federatedId = trim($federatedId);
+                if (empty($federatedId)) {
+                    continue;
+                }
+                
+                $result = $this->addFederatedParticipant($token, $federatedId);
+                if ($result['success']) {
+                    $participantsAdded++;
+                } else {
+                    $participantsFailed++;
+                    $this->logger->warning('Could not add federated participant', [
+                        'app' => 'create_external_conversation',
+                        'federatedId' => $federatedId,
+                        'error' => $result['error'] ?? 'Unknown error',
+                        'note' => 'User can still join via public link',
+                    ]);
+                }
             }
 
             // Generate the link
@@ -82,7 +91,8 @@ class ConversationService {
                 'token' => $token,
                 'roomId' => $roomId,
                 'conversationName' => $conversationName,
-                'participantAdded' => $participantAdded,
+                'participantsAdded' => $participantsAdded,
+                'participantsFailed' => $participantsFailed,
             ];
 
         } catch (\Exception $e) {

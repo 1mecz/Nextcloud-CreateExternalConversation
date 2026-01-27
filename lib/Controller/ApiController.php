@@ -11,6 +11,7 @@ use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCSController;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCP\IUserManager;
 
 /**
  * OCS API Controller for Create External Conversation
@@ -19,17 +20,20 @@ class ApiController extends OCSController {
     private ConversationService $conversationService;
     private SettingsService $settingsService;
     private IUserSession $userSession;
+    private IUserManager $userManager;
 
     public function __construct(
         IRequest $request,
         ConversationService $conversationService,
         SettingsService $settingsService,
-        IUserSession $userSession
+        IUserSession $userSession,
+        IUserManager $userManager
     ) {
         parent::__construct(Application::APP_ID, $request);
         $this->conversationService = $conversationService;
         $this->settingsService = $settingsService;
         $this->userSession = $userSession;
+        $this->userManager = $userManager;
     }
 
     /**
@@ -81,7 +85,7 @@ class ApiController extends OCSController {
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function createConversation(string $conversationName = ''): DataResponse {
+    public function createConversation(string $conversationName = '', array $participants = []): DataResponse {
         $conversationName = trim($conversationName);
 
         if (empty($conversationName)) {
@@ -99,12 +103,15 @@ class ApiController extends OCSController {
             );
         }
 
-        // Get current user's federated cloud ID (e.g., tomas@nextcloud.com
+        // Get current user's federated cloud ID (e.g., tomas@nextcloud.com)
         $currentUserFederatedId = $currentUser->getUID() . '@' . $this->request->getServerHost();
+
+        // Add current user to participants if not already there
+        $allParticipants = array_unique(array_merge([$currentUserFederatedId], $participants));
 
         $result = $this->conversationService->createExternalConversation(
             $conversationName,
-            $currentUserFederatedId
+            $allParticipants
         );
 
         if (!$result['success']) {
@@ -119,7 +126,9 @@ class ApiController extends OCSController {
             'link' => $result['link'],
             'token' => $result['token'],
             'conversationName' => $conversationName,
-            'message' => 'Conversation created and federated user invited'
+            'participantsAdded' => $result['participantsAdded'] ?? 0,
+            'participantsFailed' => $result['participantsFailed'] ?? 0,
+            'message' => 'Conversation created successfully'
         ]);
     }
 
@@ -143,5 +152,63 @@ class ApiController extends OCSController {
             'success' => true,
             'users' => $result['users']
         ]);
+    }
+
+    /**
+     * Search for local users (for inviting to external conversation)
+     * 
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function searchLocalUsers(string $search = ''): DataResponse {
+        $search = trim($search);
+        
+        if (strlen($search) < 2) {
+            return new DataResponse([
+                'success' => true,
+                'users' => []
+            ]);
+        }
+
+        $currentUser = $this->userSession->getUser();
+        if ($currentUser === null) {
+            return new DataResponse(
+                ['error' => 'User not logged in'],
+                Http::STATUS_UNAUTHORIZED
+            );
+        }
+
+        try {
+            // Search for users
+            $foundUsers = $this->userManager->searchDisplayName($search, 20);
+            
+            $users = [];
+            $serverHost = $this->request->getServerHost();
+            
+            foreach ($foundUsers as $user) {
+                $userId = $user->getUID();
+                
+                // Skip current user
+                if ($userId === $currentUser->getUID()) {
+                    continue;
+                }
+                
+                $users[] = [
+                    'id' => $userId,
+                    'displayName' => $user->getDisplayName(),
+                    'federatedId' => $userId . '@' . $serverHost,
+                ];
+            }
+
+            return new DataResponse([
+                'success' => true,
+                'users' => $users
+            ]);
+        } catch (\Exception $e) {
+            return new DataResponse(
+                ['error' => 'Failed to search local users: ' . $e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
     }
 }
