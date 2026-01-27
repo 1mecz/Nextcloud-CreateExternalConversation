@@ -73,5 +73,10 @@ return [
             'url' => '/api/v1/conversation/{token}/participants',
             'verb' => 'POST',
         ],
-    ],
-];
+
+        // OCS API endpoint to search for rooms on external server by name
+        [
+            'name' => 'api#searchRooms',
+            'url' => '/api/v1/search-rooms',
+            'verb' => 'GET',
+        ],

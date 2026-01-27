@@ -252,18 +252,18 @@
             return;
         }
 
-        // Try to find external token from localStorage
+        // Try to find external token from localStorage first
         let externalToken = null;
         const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
         externalToken = Object.keys(externalTokens).find(token => externalTokens[token].token) || null;
 
-        // If not found in localStorage, try to fetch it from API
+        // If not found, fetch from local Talk API then search on external server
         if (!externalToken) {
-            fetchExternalTokenFromAPI(localToken, (token) => {
+            fetchConversationAndGetExternalToken(localToken, (token) => {
                 if (token) {
                     addParticipantToExternalConversation(modal, federatedId, token);
                 } else {
-                    // Fallback to manual input modal
+                    // Fallback to manual input
                     showExternalTokenModal((manualToken) => {
                         if (manualToken) {
                             addParticipantToExternalConversation(modal, federatedId, manualToken);
@@ -278,64 +278,79 @@
         addParticipantToExternalConversation(modal, federatedId, externalToken);
     }
 
-    function fetchExternalTokenFromAPI(localToken, callback) {
-        const url = `/apps/create_external_conversation/api/v1/external-token/${encodeURIComponent(localToken)}`;
-        console.log('[CreateExternalConversation] Fetching external token from API:', url);
-
-        fetch(url, {
-            method: 'GET',
+    function fetchConversationAndGetExternalToken(localToken, callback) {
+        // Fetch local conversation info from Talk API
+        fetch(`/ocs/v2.php/apps/spreed/api/v4/room/${encodeURIComponent(localToken)}?format=json`, {
             headers: {
+                'OCS-APIRequest': 'true',
                 'requesttoken': OC.requestToken,
             },
         })
-        .then(response => {
-            console.log('[CreateExternalConversation] External token API response status:', response.status);
-            console.log('[CreateExternalConversation] External token API response headers:', response.headers.get('content-type'));
-            
-            // Check if response is ok
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            // Check content type
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                console.error('[CreateExternalConversation] Invalid content type:', contentType);
-                // Try to get response text for debugging
-                return response.text().then(text => {
-                    console.error('[CreateExternalConversation] Response text:', text);
-                    throw new Error(`Invalid content type: ${contentType}. Expected JSON.`);
-                });
-            }
-            
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('[CreateExternalConversation] External token API response data:', data);
-            if (data && data.success && data.externalToken) {
-                const externalToken = data.externalToken;
-                console.log('[CreateExternalConversation] Got external token:', externalToken);
-                
-                // Store it in localStorage for future use
-                const externalTokens = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
-                if (!externalTokens[externalToken]) {
-                    externalTokens[externalToken] = {
-                        token: externalToken,
-                        createdAt: new Date().toISOString(),
-                    };
-                    localStorage.setItem('externalConversationTokens', JSON.stringify(externalTokens));
-                    console.log('[CreateExternalConversation] Stored external token:', externalToken);
-                }
-                
-                callback(externalToken);
-            } else {
-                const error = data ? data.error : 'Unknown error';
-                console.log('[CreateExternalConversation] Failed to get external token:', error);
+            const localConversation = data.ocs?.data;
+            if (!localConversation) {
+                console.error('[CreateExternalConversation] Could not fetch local conversation');
                 callback(null);
+                return;
             }
+
+            const conversationName = localConversation.displayName || localConversation.name;
+            console.log('[CreateExternalConversation] Found local conversation:', conversationName);
+
+            // Now search on external server using our API
+            fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/users?format=json`, {
+                headers: {
+                    'OCS-APIRequest': 'true',
+                    'requesttoken': OC.requestToken,
+                },
+            })
+            .then(response => response.json())
+            .then(externalRoomsData => {
+                // This is actually getting users, but we need rooms
+                // Let's use a different approach - call backend to search for rooms
+                console.log('[CreateExternalConversation] Need to search for rooms on external server');
+                
+                // Call backend API to find matching room
+                fetch(`/ocs/v2.php/apps/create_external_conversation/api/v1/search-rooms?name=${encodeURIComponent(conversationName)}&format=json`, {
+                    headers: {
+                        'OCS-APIRequest': 'true',
+                        'requesttoken': OC.requestToken,
+                    },
+                })
+                .then(response => response.json())
+                .then(roomsData => {
+                    const rooms = roomsData.ocs?.data?.rooms || [];
+                    if (rooms.length > 0) {
+                        const externalToken = rooms[0].token;
+                        console.log('[CreateExternalConversation] Found external room:', externalToken);
+                        
+                        // Store in localStorage
+                        const stored = JSON.parse(localStorage.getItem('externalConversationTokens') || '{}');
+                        stored[externalToken] = {
+                            token: externalToken,
+                            createdAt: new Date().toISOString(),
+                        };
+                        localStorage.setItem('externalConversationTokens', JSON.stringify(stored));
+                        
+                        callback(externalToken);
+                    } else {
+                        console.log('[CreateExternalConversation] No matching rooms found');
+                        callback(null);
+                    }
+                })
+                .catch(error => {
+                    console.error('[CreateExternalConversation] Error searching rooms:', error);
+                    callback(null);
+                });
+            })
+            .catch(error => {
+                console.error('[CreateExternalConversation] Error fetching external data:', error);
+                callback(null);
+            });
         })
         .catch(error => {
-            console.error('[CreateExternalConversation] Error fetching external token:', error);
+            console.error('[CreateExternalConversation] Error fetching local conversation:', error);
             callback(null);
         });
     }

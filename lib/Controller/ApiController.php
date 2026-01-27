@@ -311,35 +311,37 @@ class ApiController extends OCSController {
     }
 
     /**
-     * Get external conversation token for a local conversation (web endpoint)
-     * Returns direct JSON, not wrapped in OCS
-     * 
+     * Search for rooms on external server by name
+     *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function getExternalTokenWeb(string $token = ''): \OCP\AppFramework\Http\JSONResponse {
-        $token = trim($token);
+    public function searchRooms(string $name = ''): DataResponse {
+        $name = trim($name);
 
-        if (empty($token)) {
-            return new \OCP\AppFramework\Http\JSONResponse(
-                ['success' => false, 'error' => 'Token is required'],
+        if (empty($name)) {
+            return new DataResponse(
+                ['success' => false, 'error' => 'Name is required'],
                 Http::STATUS_BAD_REQUEST
             );
         }
 
-        $result = $this->conversationService->getExternalTokenForConversation($token);
+        try {
+            $rooms = $this->conversationService->searchRoomsByName($name);
+            
+            return new DataResponse([
+                'success' => true,
+                'rooms' => $rooms
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Error searching external server rooms', [
+                'exception' => $e->getMessage()
+            ]);
 
-        if (!$result['success']) {
-            return new \OCP\AppFramework\Http\JSONResponse(
-                ['success' => false, 'error' => $result['error'] ?? 'Failed to get external token'],
+            return new DataResponse(
+                ['success' => false, 'error' => 'Failed to search external server'],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }
-
-        return new \OCP\AppFramework\Http\JSONResponse([
-            'success' => true,
-            'externalToken' => $result['externalToken'],
-            'conversationName' => $result['conversationName'] ?? null,
-        ]);
     }
 }

@@ -530,4 +530,67 @@ class ConversationService {
         }
     }
 
+    /**
+     * Search for rooms on external server by name
+     *
+     * @param string $name Name or partial name to search for
+     * @return array Array of matching rooms with their tokens
+     */
+    public function searchRoomsByName(string $name): array {
+        if (!$this->settingsService->isConfigured()) {
+            throw new \Exception('External server not configured');
+        }
+
+        $settings = $this->settingsService->getSettings();
+        $externalUrl = $settings['external_url'] ?? '';
+
+        if (empty($externalUrl)) {
+            throw new \Exception('External server URL not configured');
+        }
+
+        try {
+            // Fetch all rooms from external server
+            $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
+
+            $client = $this->clientService->newClient();
+            $response = $client->request('GET', $url, [
+                'headers' => [
+                    'OCS-APIRequest' => 'true',
+                    'Accept' => 'application/json',
+                    'Authorization' => 'Basic ' . base64_encode(
+                        $settings['external_user'] . ':' . $settings['external_password']
+                    ),
+                ],
+            ]);
+
+            $body = $response->getBody();
+            $data = json_decode($body, true) ?? [];
+
+            $rooms = $data['ocs']['data'] ?? [];
+            $nameLower = strtolower($name);
+            $matches = [];
+
+            // Filter rooms by name (case-insensitive)
+            foreach ($rooms as $room) {
+                $displayName = $room['displayName'] ?? $room['name'] ?? '';
+                if (stripos($displayName, $name) !== false) {
+                    $matches[] = [
+                        'token' => $room['token'] ?? '',
+                        'displayName' => $displayName,
+                        'type' => $room['type'] ?? 0,
+                    ];
+                }
+            }
+
+            return $matches;
+        } catch (\Exception $e) {
+            $this->logger->error('Error searching external server rooms', [
+                'app' => 'create_external_conversation',
+                'name' => $name,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
 ```
