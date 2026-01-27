@@ -160,13 +160,37 @@ class ApiController extends OCSController {
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function addParticipant(string $token = '', string $federatedId = ''): DataResponse {
+    public function addParticipant(string $token = ''): DataResponse {
         $token = trim($token);
-        $federatedId = trim($federatedId);
+        
+        // Extract federatedId from request body
+        // Support both JSON and form-data
+        $federatedId = trim($this->request->getParam('federatedId', ''));
+        if (empty($federatedId)) {
+            // Try getting from raw JSON body as fallback
+            $body = $this->request->getStream()->getContents();
+            if (!empty($body)) {
+                try {
+                    $data = json_decode($body, true);
+                    if (is_array($data) && isset($data['federatedId'])) {
+                        $federatedId = trim($data['federatedId']);
+                    }
+                } catch (\Exception $e) {
+                    // Ignore JSON parsing errors
+                }
+            }
+        }
 
-        if (empty($token) || empty($federatedId)) {
+        if (empty($token)) {
             return new DataResponse(
-                ['error' => 'Token and federated ID are required'],
+                ['error' => 'Token is required'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        if (empty($federatedId)) {
+            return new DataResponse(
+                ['error' => 'Federated ID is required'],
                 Http::STATUS_BAD_REQUEST
             );
         }

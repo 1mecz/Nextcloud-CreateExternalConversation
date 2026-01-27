@@ -171,6 +171,13 @@ class ConversationService {
         try {
             $response = $this->makeRequest('POST', $url, $data, true);  // true = form data
             
+            // Check if response indicates success
+            $statuscode = $response['ocs']['meta']['statuscode'] ?? null;
+            if ($statuscode !== 200) {
+                $message = $response['ocs']['meta']['message'] ?? 'Unknown error';
+                throw new \Exception('Talk API error: ' . $message . ' (status: ' . $statuscode . ')');
+            }
+            
             $this->logger->info('Add federated participant response', [
                 'app' => 'create_external_conversation',
                 'federatedId' => $federatedId,

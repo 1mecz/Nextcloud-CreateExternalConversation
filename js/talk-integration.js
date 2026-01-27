@@ -272,17 +272,18 @@
         const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/participants?format=json`;
         console.log('[CreateExternalConversation] Calling:', url);
 
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('federatedId', federatedId);
+
         // Make request to add participant
         fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'OCS-APIRequest': 'true',
                 'requesttoken': OC.requestToken,
             },
-            body: JSON.stringify({
-                federatedId: federatedId,
-            }),
+            body: formData,
         })
         .then(response => {
             console.log('[CreateExternalConversation] Response status:', response.status);
