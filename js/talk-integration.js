@@ -89,7 +89,7 @@
     function showAddParticipantModal() {
         // Create modal
         const modal = document.createElement('div');
-        modal.className = 'create-external-conversation-modal';
+        modal.className = 'add-participant-modal';
         modal.innerHTML = `
             <div class="modal-overlay"></div>
             <div class="modal-content">
@@ -630,7 +630,7 @@
                 fill: currentColor;
             }
 
-            .create-external-conversation-modal {
+            .add-participant-modal {
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
@@ -643,7 +643,7 @@
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             }
 
-            .modal-overlay {
+            .add-participant-modal .modal-overlay {
                 position: absolute !important;
                 top: 0 !important;
                 left: 0 !important;
@@ -653,7 +653,7 @@
                 cursor: pointer !important;
             }
 
-            .modal-content {
+            .add-participant-modal .modal-content {
                 position: relative !important;
                 background-color: white !important;
                 border-radius: 8px !important;
