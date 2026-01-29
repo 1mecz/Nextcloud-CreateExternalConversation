@@ -684,12 +684,9 @@
             const hasError = data?.ocs?.data?.error;
             
             if (success) {
-                resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
 
                 if (options.closeOnSuccess) {
-                    form.style.display = 'none';
-                    addedParticipantEl.textContent = federatedId;
                     showNotification(`Participant ${federatedId} added successfully!`, 'success');
 
                     // Close modal after 2 seconds
@@ -1003,11 +1000,8 @@
         .then(response => response.json())
         .then(data => {
             if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
-                form.style.display = 'none';
-                resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
-                modal.querySelector('#result-link').value = data.ocs.data.link;
-                modal.querySelector('#participants-count').textContent = data.ocs.data.participantsAdded || 0;
+                showNotification('Conversation created successfully!', 'success');
 
                 // Store external token in localStorage for later use when adding participants
                 if (data.ocs.data.token) {
@@ -1021,6 +1015,9 @@
                     localStorage.setItem('externalConversationTokens', JSON.stringify(externalTokens));
                     console.log('[CreateExternalConversation] Stored external token:', externalToken);
                 }
+                
+                // Close modal after 2 seconds
+                setTimeout(() => modal.remove(), 2000);
 
                 // Try to refresh Talk conversations without full page reload
                 refreshTalkList();
