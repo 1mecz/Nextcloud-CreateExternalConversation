@@ -995,10 +995,11 @@
                         margin-top: 8px;
                         border: 1px solid var(--color-border, #ddd);
                         border-radius: 6px;
+                        max-height: 250px;
                         overflow-y: auto;
                         background: #f5f5f5;
-                        flex: 1;
-                        min-height: 100px;
+                        width: 100%;
+                        box-sizing: border-box;
                     "></div>
                     <div id="conv-selected-participants" class="selected-participants" style="
                         margin-top: 12px;
