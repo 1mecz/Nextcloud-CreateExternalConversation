@@ -159,20 +159,54 @@
         `;
 
         modalContent.innerHTML = `
-            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">Add Participant to External Conversation</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Add Participant to External Conversation</h2>
+                <button type="button" class="modal-close-btn" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: #333;
+                    padding: 0;
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0.7;
+                    transition: opacity 0.2s ease;
+                " title="Close">
+                    ×
+                </button>
+            </div>
             <form id="add-participant-form">
                 <div class="form-group">
                     <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">Search users</label>
                     <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off" style="
                         width: 100%;
-                        padding: 10px;
-                        border: 1px solid var(--color-border, #ddd);
+                        padding: 10px 12px;
+                        border: 2px solid var(--color-border, #ddd);
                         border-radius: 6px;
                         font-size: 14px;
                         box-sizing: border-box;
+                        transition: border-color 0.2s ease;
                     ">
-                    <div id="participant-search-results" class="search-results" style="display: none; margin-top: 8px;"></div>
-                    <div id="selected-participants" class="selected-participants" style="margin-top: 12px;"></div>
+                    <div id="participant-search-results" class="search-results" style="
+                        display: none;
+                        margin-top: 8px;
+                        border: 1px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        max-height: 250px;
+                        overflow-y: auto;
+                        background: #f5f5f5;
+                    "></div>
+                    <div id="selected-participants" class="selected-participants" style="
+                        margin-top: 16px;
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                        min-height: 0;
+                    "></div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 24px;">
                     <button type="submit" class="btn btn-primary" style="
@@ -217,6 +251,20 @@
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
 
+        // Close button handler
+        const closeBtn = modalContent.querySelector('.modal-close-btn');
+        const closeModal = () => {
+            modal.remove();
+        };
+        closeBtn.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
         // Store selected participant
         const selectedParticipants = new Set();
 
@@ -238,6 +286,17 @@
             searchTimeout = setTimeout(() => {
                 searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer);
             }, 300);
+        });
+
+        // Add focus/blur styling to search input
+        searchInput.addEventListener('focus', () => {
+            searchInput.style.borderColor = '#0082c9';
+            searchInput.style.boxShadow = '0 0 0 3px rgba(0, 130, 201, 0.1)';
+        });
+        
+        searchInput.addEventListener('blur', () => {
+            searchInput.style.borderColor = 'var(--color-border, #ddd)';
+            searchInput.style.boxShadow = 'none';
         });
 
         // Handle close
@@ -875,7 +934,7 @@
         resultsContainer.innerHTML = '';
 
         if (!users || users.length === 0) {
-            resultsContainer.innerHTML = '<div class="search-result-item">No users found</div>';
+            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #666;">No users found</div>';
             resultsContainer.style.display = 'block';
             return;
         }
@@ -886,9 +945,25 @@
 
             const item = document.createElement('div');
             item.className = 'search-result-item';
-            item.textContent = `${user.displayName} (${user.id})`;
+            item.innerHTML = `<div style="font-weight: 500;">${user.displayName}</div><div style="font-size: 12px; color: #666;">${user.id}</div>`;
             item.dataset.federatedId = user.federatedId;
             item.dataset.displayName = user.displayName;
+            
+            item.style.cssText = `
+                padding: 10px 12px;
+                border-bottom: 1px solid #ddd;
+                cursor: pointer;
+                transition: background 0.15s ease;
+                user-select: none;
+            `;
+            
+            item.addEventListener('mouseenter', () => {
+                item.style.background = '#e8e8e8';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                item.style.background = 'transparent';
+            });
             
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -908,11 +983,56 @@
     function addSelectedParticipant(user, selectedParticipants, selectedContainer) {
         const chip = document.createElement('div');
         chip.className = 'participant-chip';
-        chip.style.cssText = 'display: inline-block; padding: 6px 10px; margin: 4px; background: #0082c9; color: white; border-radius: 4px; font-size: 13px;';
-        chip.innerHTML = `
-            <span title="${user.federatedId}" style="display: inline-block; margin-right: 6px;">${user.displayName}</span>
-            <button type="button" class="remove-participant" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px; padding: 0; margin: 0;">&times;</button>
+        chip.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #0082c9;
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
         `;
+        chip.innerHTML = `
+            <span title="${user.federatedId}">${user.displayName}</span>
+            <button type="button" class="remove-participant" style="
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 18px;
+                padding: 0;
+                margin: 0;
+                opacity: 0.8;
+                transition: opacity 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 20px;
+                height: 20px;
+            ">&times;</button>
+        `;
+        
+        chip.addEventListener('mouseenter', () => {
+            chip.style.background = '#006aa3';
+        });
+        
+        chip.addEventListener('mouseleave', () => {
+            chip.style.background = '#0082c9';
+        });
+        
+        const removeBtn = chip.querySelector('.remove-participant');
+        removeBtn.addEventListener('mouseenter', () => {
+            removeBtn.style.opacity = '1';
+        });
+        
+        removeBtn.addEventListener('mouseleave', () => {
+            removeBtn.style.opacity = '0.8';
+        });
         
         chip.querySelector('.remove-participant').addEventListener('click', (e) => {
             e.preventDefault();
