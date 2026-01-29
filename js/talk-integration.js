@@ -273,7 +273,7 @@
                     border: none;
                     font-size: 24px;
                     cursor: pointer;
-                    color: #333;
+                    color: var(--color-text, #333);
                     padding: 0;
                     width: 28px;
                     height: 28px;
@@ -305,7 +305,7 @@
                         border: 1px solid var(--color-border, #ddd);
                         border-radius: 6px;
                         overflow-y: auto;
-                        background: #f5f5f5;
+                        background: var(--color-main-background, #f5f5f5);
                         flex: 1;
                         min-height: 0;
                     "></div>
@@ -768,7 +768,7 @@
                     border: none;
                     font-size: 24px;
                     cursor: pointer;
-                    color: #333;
+                    color: var(--color-text, #333);
                     padding: 0;
                     width: 28px;
                     height: 28px;
@@ -952,7 +952,7 @@
                     border: none;
                     font-size: 24px;
                     cursor: pointer;
-                    color: #333;
+                    color: var(--color-text, #333);
                     padding: 0;
                     width: 28px;
                     height: 28px;
@@ -997,7 +997,7 @@
                         border-radius: 6px;
                         max-height: 250px;
                         overflow-y: auto;
-                        background: #f5f5f5;
+                        background: var(--color-main-background, #f5f5f5);
                         width: 100%;
                         box-sizing: border-box;
                     "></div>
@@ -1386,14 +1386,14 @@
             
             item.style.cssText = `
                 padding: 10px 12px;
-                border-bottom: 1px solid #ddd;
+                border-bottom: 1px solid var(--color-border, #ddd);
                 cursor: pointer;
                 transition: background 0.15s ease;
                 user-select: none;
             `;
             
             item.addEventListener('mouseenter', () => {
-                item.style.background = '#e8e8e8';
+                item.style.background = 'var(--color-background-hover, #e8e8e8)';
             });
             
             item.addEventListener('mouseleave', () => {
