@@ -85,8 +85,17 @@ class ApiController extends OCSController {
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function createConversation(string $conversationName = '', array $participants = []): DataResponse {
+    public function createConversation(string $conversationName = '', $participants = []): DataResponse {
         $conversationName = trim($conversationName);
+
+        if (!is_array($participants)) {
+            if (is_string($participants)) {
+                $decoded = json_decode($participants, true);
+                $participants = is_array($decoded) ? $decoded : [];
+            } else {
+                $participants = [];
+            }
+        }
 
         if (empty($conversationName)) {
             return new DataResponse(
@@ -109,10 +118,17 @@ class ApiController extends OCSController {
         // Add current user to participants if not already there
         $allParticipants = array_unique(array_merge([$currentUserFederatedId], $participants));
 
-        $result = $this->conversationService->createExternalConversation(
-            $conversationName,
-            $allParticipants
-        );
+        try {
+            $result = $this->conversationService->createExternalConversation(
+                $conversationName,
+                $allParticipants
+            );
+        } catch (\Throwable $e) {
+            return new DataResponse(
+                ['error' => 'Exception: ' . $e->getMessage()],
+                Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
 
         if (!$result['success']) {
             return new DataResponse(

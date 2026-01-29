@@ -118,12 +118,7 @@
             statusEl.style.color = '#888';
                 createBtn.disabled = true;
             
-                // Get current user info from Nextcloud
-                const currentUser = OC.getCurrentUser().uid;
-                const serverHost = window.location.hostname;
-                const federatedId = currentUser + '@' + serverHost;
-            
-            fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
+                fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -136,13 +131,18 @@
                         participants: []  // You will be added automatically by the API
                 })
             })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('HTTP ' + response.status);
-                    }
-                    return response.json();
-                })
-            .then(result => {
+                    .then(async response => {
+                        const text = await response.text();
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status + ': ' + text.substring(0, 200));
+                        }
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            throw new Error('Non-JSON response: ' + text.substring(0, 200));
+                        }
+                    })
+                .then(result => {
                     createBtn.disabled = false;
                 
                 if (result.ocs && result.ocs.data && result.ocs.data.success) {
