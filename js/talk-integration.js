@@ -28,6 +28,27 @@
             console.log('[CreateExternalConversation] Hash changed to:', window.location.hash);
             setTimeout(addParticipantButton, 500);
         });
+
+        // Periodically check if participant button should be added
+        // This handles cases where top-bar__wrapper loads after initial check
+        const participantButtonWatcher = setInterval(() => {
+            addParticipantButton();
+        }, 2000);
+
+        // Watch for DOM changes to re-add button if it gets removed or changed
+        try {
+            const observer = new MutationObserver(() => {
+                addParticipantButton();
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: false
+            });
+        } catch (e) {
+            console.log('[CreateExternalConversation] MutationObserver not available');
+        }
     }
 
     function addParticipantButton() {
