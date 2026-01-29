@@ -754,30 +754,54 @@
             max-width: 500px;
             width: 90%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
         `;
 
         modalContent.innerHTML = `
-            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">External Conversation ID</h2>
-            <p style="margin: 0 0 16px 0; color: var(--color-text-lighter, #666); font-size: 14px;">
-                This conversation was created externally. Please enter the conversation ID from the external Nextcloud server (the ID in the URL after /call/)
-            </p>
-            <form id="external-token-form">
-                <div class="form-group">
-                    <label for="external-token-input" style="display: block; font-weight: 500; margin-bottom: 8px;">External Conversation ID</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: 600;">External Conversation ID</h2>
+                <button type="button" class="modal-close-btn" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: #333;
+                    padding: 0;
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0.7;
+                    transition: opacity 0.2s ease;
+                " title="Close">
+                    ×
+                </button>
+            </div>
+            <form id="external-token-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <div class="form-group" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                    <p style="margin: 0 0 16px 0; color: var(--color-text-lighter, #666); font-size: 14px; flex-shrink: 0;">
+                        This conversation was created externally. Please enter the conversation ID from the external Nextcloud server (the ID in the URL after /call/)
+                    </p>
+                    <label for="external-token-input" style="display: block; font-weight: 500; margin-bottom: 8px; flex-shrink: 0;">External Conversation ID</label>
                     <input type="text" id="external-token-input" placeholder="e.g. iioe3kww" autocomplete="off" style="
                         width: 100%;
-                        padding: 10px;
-                        border: 1px solid var(--color-border, #ddd);
+                        padding: 10px 12px;
+                        border: 2px solid var(--color-border, #ddd);
                         border-radius: 6px;
                         font-size: 14px;
                         box-sizing: border-box;
+                        transition: border-color 0.2s ease;
+                        flex-shrink: 0;
                     ">
-                    <p style="margin: 8px 0 0 0; color: var(--color-text-lighter, #666); font-size: 12px;">
+                    <p style="margin: 8px 0 0 0; color: var(--color-text-lighter, #666); font-size: 12px; flex-shrink: 0;">
                         You can find this in the external server URL: ext.example.com/call/<strong>iioe3kww</strong>
                     </p>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 24px;">
-                    <button type="submit" class="btn btn-primary" style="
+                <div style="display: flex; gap: 10px; margin-top: 24px; flex-shrink: 0;">
+                    <button type="submit" class="btn btn-primary" id="use-token-btn" style="
                         flex: 1;
                         padding: 10px 16px;
                         border: none;
@@ -786,16 +810,8 @@
                         color: white;
                         cursor: pointer;
                         font-weight: 500;
+                        transition: opacity 0.2s ease;
                     ">Use</button>
-                    <button type="button" class="btn btn-secondary" id="cancel-token-btn" style="
-                        flex: 1;
-                        padding: 10px 16px;
-                        border: 1px solid var(--color-border, #ddd);
-                        border-radius: 6px;
-                        background: transparent;
-                        cursor: pointer;
-                        font-weight: 500;
-                    ">Cancel</button>
                 </div>
             </form>
         `;
@@ -803,31 +819,51 @@
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
 
-        // Handle close
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-                callback(null);
-            }
-        });
-        modalContent.querySelector('#cancel-token-btn').addEventListener('click', () => {
+        // Close button handler
+        const closeBtn = modalContent.querySelector('.modal-close-btn');
+        const closeModal = () => {
             modal.remove();
             callback(null);
+        };
+        closeBtn.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
         });
 
         // Handle form submit
         const form = modalContent.querySelector('#external-token-form');
+        const useBtn = modalContent.querySelector('#use-token-btn');
+        const tokenInput = modalContent.querySelector('#external-token-input');
+        
+        // Add focus/blur styling to input
+        tokenInput.addEventListener('focus', () => {
+            tokenInput.style.borderColor = '#0082c9';
+            tokenInput.style.boxShadow = '0 0 0 3px rgba(0, 130, 201, 0.1)';
+        });
+        
+        tokenInput.addEventListener('blur', () => {
+            tokenInput.style.borderColor = 'var(--color-border, #ddd)';
+            tokenInput.style.boxShadow = 'none';
+        });
+        
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const token = modalContent.querySelector('#external-token-input').value.trim();
+            const token = tokenInput.value.trim();
             if (token) {
+                useBtn.disabled = true;
+                useBtn.style.opacity = '0.6';
+                useBtn.style.cursor = 'not-allowed';
                 modal.remove();
                 callback(token);
             }
         });
 
         // Focus input field
-        modalContent.querySelector('#external-token-input').focus();
+        tokenInput.focus();
     }
 
     function addButtonToDashboard() {
