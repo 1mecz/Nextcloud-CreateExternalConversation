@@ -410,9 +410,16 @@
         // Handle form submit
         const form = modalContent.querySelector('#add-participant-form');
         const addBtn = modalContent.querySelector('#add-btn');
+        let isProcessing = false;
         
         form.addEventListener('submit', (e) => {
             e.preventDefault();
+            
+            // Prevent multiple submissions
+            if (isProcessing || addBtn.disabled) {
+                return;
+            }
+            
             if (selectedParticipants.size === 0) {
                 const errorContainer = modalContent.querySelector('#error-container');
                 errorContainer.style.display = 'block';
@@ -421,20 +428,26 @@
             }
             
             // Disable Add button during submission
+            isProcessing = true;
             addBtn.disabled = true;
             addBtn.style.opacity = '0.6';
             addBtn.style.cursor = 'not-allowed';
+            addBtn.style.pointerEvents = 'none';
             
             const participants = Array.from(selectedParticipants);
             if (participants.length === 1) {
-                handleAddParticipant(modal, participants[0], addBtn);
+                handleAddParticipant(modal, participants[0], addBtn, () => {
+                    isProcessing = false;
+                });
             } else {
-                handleAddParticipants(modal, participants, addBtn);
+                handleAddParticipants(modal, participants, addBtn, () => {
+                    isProcessing = false;
+                });
             }
         });
     }
 
-    function handleAddParticipant(modal, federatedId, addBtn) {
+    function handleAddParticipant(modal, federatedId, addBtn, onComplete) {
         // Get local conversation token
         const localToken = getConversationToken();
 
@@ -445,6 +458,8 @@
             addBtn.disabled = false;
             addBtn.style.opacity = '1';
             addBtn.style.cursor = 'pointer';
+            addBtn.style.pointerEvents = 'auto';
+            if (onComplete) onComplete();
             return;
         }
 
@@ -455,7 +470,7 @@
         fetchConversationAndGetExternalToken(localToken, (remoteToken) => {
             if (remoteToken) {
                 console.log('[CreateExternalConversation] Got remote token from Talk API, adding participant');
-                addParticipantToExternalConversation(modal, federatedId, remoteToken, { closeOnSuccess: true }, addBtn);
+                addParticipantToExternalConversation(modal, federatedId, remoteToken, { closeOnSuccess: true }, addBtn, onComplete);
             } else {
                 // No remote token found - ask user to enter external token manually
                 console.log('[CreateExternalConversation] No external token found, asking user');
@@ -466,7 +481,7 @@
                     modal.style.display = 'flex';
                     
                     if (userToken) {
-                        addParticipantToExternalConversation(modal, federatedId, userToken, { closeOnSuccess: true }, addBtn);
+                        addParticipantToExternalConversation(modal, federatedId, userToken, { closeOnSuccess: true }, addBtn, onComplete);
                     } else {
                         // User cancelled
                         modal.querySelector('#error-container').style.display = 'block';
@@ -475,13 +490,15 @@
                         addBtn.disabled = false;
                         addBtn.style.opacity = '1';
                         addBtn.style.cursor = 'pointer';
+                        addBtn.style.pointerEvents = 'auto';
+                        if (onComplete) onComplete();
                     }
                 });
             }
         });
     }
 
-    function handleAddParticipants(modal, federatedIds, addBtn) {
+    function handleAddParticipants(modal, federatedIds, addBtn, onComplete) {
         // Get local conversation token
         const localToken = getConversationToken();
 
@@ -492,6 +509,8 @@
             addBtn.disabled = false;
             addBtn.style.opacity = '1';
             addBtn.style.cursor = 'pointer';
+            addBtn.style.pointerEvents = 'auto';
+            if (onComplete) onComplete();
             return;
         }
 
@@ -526,7 +545,10 @@
                     resultContainer.style.display = 'none';
                     showNotification(`Successfully added ${federatedIds.length} participants!`, 'success');
                     // Close modal after 2 seconds
-                    setTimeout(() => modal.remove(), 2000);
+                    setTimeout(() => {
+                        modal.remove();
+                        if (onComplete) onComplete();
+                    }, 2000);
                 })
                 .catch((err) => {
                     // Remove the "Adding..." notification
@@ -546,6 +568,8 @@
                     addBtn.disabled = false;
                     addBtn.style.opacity = '1';
                     addBtn.style.cursor = 'pointer';
+                    addBtn.style.pointerEvents = 'auto';
+                    if (onComplete) onComplete();
                 });
         };
 
@@ -570,6 +594,8 @@
                         addBtn.disabled = false;
                         addBtn.style.opacity = '1';
                         addBtn.style.cursor = 'pointer';
+                        addBtn.style.pointerEvents = 'auto';
+                        if (onComplete) onComplete();
                     }
                 });
             }
@@ -609,7 +635,7 @@
         });
     }
 
-    function addParticipantToExternalConversation(modal, federatedId, externalToken, options = { closeOnSuccess: true }, addBtn = null) {
+    function addParticipantToExternalConversation(modal, federatedId, externalToken, options = { closeOnSuccess: true }, addBtn = null, onComplete = null) {
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
@@ -667,7 +693,10 @@
                     showNotification(`Participant ${federatedId} added successfully!`, 'success');
 
                     // Close modal after 2 seconds
-                    setTimeout(() => modal.remove(), 2000);
+                    setTimeout(() => {
+                        modal.remove();
+                        if (onComplete) onComplete();
+                    }, 2000);
                 } else {
                     // Append participant to list in-place
                     const current = addedParticipantEl.textContent.trim();
@@ -678,6 +707,7 @@
                         addBtn.disabled = false;
                         addBtn.style.opacity = '1';
                         addBtn.style.cursor = 'pointer';
+                        addBtn.style.pointerEvents = 'auto';
                     }
                 }
             } else if (hasError) {
@@ -697,6 +727,7 @@
                 addBtn.disabled = false;
                 addBtn.style.opacity = '1';
                 addBtn.style.cursor = 'pointer';
+                addBtn.style.pointerEvents = 'auto';
             }
         });
     }
