@@ -935,13 +935,13 @@
             background: var(--color-main-background, white);
             border-radius: 12px;
             padding: 24px;
-            max-width: 600px;
-            width: 90%;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            max-height: 90vh;
+            max-width: 650px;
+            width: 95%;
+            max-height: 95vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         `;
 
         modalContent.innerHTML = `
@@ -965,9 +965,9 @@
                     ×
                 </button>
             </div>
-            <form id="create-external-conversation-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0;">
-                <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0;">
-                    <label for="conversation-name" style="display: block; font-weight: 500; margin-bottom: 8px; flex-shrink: 0;">Conversation Name</label>
+            <form id="create-external-conversation-form" style="display: flex; flex-direction: column; flex: 1; gap: 16px;">
+                <div>
+                    <label for="conversation-name" style="display: block; font-weight: 500; margin-bottom: 8px;">Conversation Name</label>
                     <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name" style="
                         width: 100%;
                         padding: 10px 12px;
@@ -976,10 +976,11 @@
                         font-size: 14px;
                         box-sizing: border-box;
                         transition: border-color 0.2s ease;
-                        flex-shrink: 0;
                     ">
-                    
-                    <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px; margin-top: 16px; flex-shrink: 0;">Add Participants (optional)</label>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                    <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">Add Participants (optional)</label>
                     <input type="text" id="conv-participant-search" placeholder="Search users..." autocomplete="off" style="
                         width: 100%;
                         padding: 10px 12px;
@@ -988,7 +989,6 @@
                         font-size: 14px;
                         box-sizing: border-box;
                         transition: border-color 0.2s ease;
-                        flex-shrink: 0;
                     ">
                     <div id="conv-participant-search-results" class="search-results" style="
                         display: none;
@@ -998,18 +998,17 @@
                         overflow-y: auto;
                         background: #f5f5f5;
                         flex: 1;
-                        min-height: 0;
+                        min-height: 100px;
                     "></div>
                     <div id="conv-selected-participants" class="selected-participants" style="
-                        margin-top: 16px;
+                        margin-top: 12px;
                         display: flex;
                         flex-wrap: wrap;
                         gap: 8px;
-                        min-height: 0;
-                        flex-shrink: 0;
                     "></div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 24px; flex-shrink: 0;">
+                
+                <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn btn-primary" style="
                         flex: 1;
                         padding: 10px 16px;
@@ -1023,7 +1022,7 @@
                     ">Create</button>
                 </div>
             </form>
-            <div id="result-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
+            <div id="result-container" style="display: none; margin-top: 16px;">
                 <div class="result-success" style="padding: 12px; background: #28a745; border-radius: 6px; color: white;">
                     <p style="margin: 0 0 8px 0;"><strong>✓ Success!</strong></p>
                     <p style="margin: 0 0 12px 0;">Conversation created with <span id="participants-count">0</span> participant(s)</p>
@@ -1061,7 +1060,7 @@
                     </div>
                 </div>
             </div>
-            <div id="error-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
+            <div id="error-container" style="display: none; margin-top: 16px;">
                 <div style="padding: 12px; background: #fff5f5; border-radius: 6px; color: #e74c3c; border-left: 4px solid #e74c3c;">
                     <p id="error-message" style="margin: 0;"></p>
                 </div>
