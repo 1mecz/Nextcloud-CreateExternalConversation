@@ -430,129 +430,83 @@ class ConversationService {
             'hasPassword' => !empty($password),
         ]);
 
-        $client = $this->clientService->newClient();
-        $this->logger->info('[DEBUG] HTTP client created', [
-            'app' => 'create_external_conversation',
-            'clientClass' => get_class($client),
-        ]);
+        // Use direct cURL instead of Guzzle to avoid compatibility issues
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         
-        $options = [
-            'auth' => [$username, $password],
-            'headers' => [
-                'OCS-APIRequest' => 'true',
-                'Accept' => 'application/json',
-            ],
+        $headers = [
+            'OCS-APIRequest: true',
+            'Accept: application/json',
         ];
 
-        if (!empty($data)) {
+        if ($method === 'POST' || $method === 'PUT') {
             if ($useFormData) {
-                // Send as form data (application/x-www-form-urlencoded)
-                $options['form_params'] = $data;
-                $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+                // Send as form data
+                $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
             } else {
                 // Send as JSON
-                $options['json'] = $data;
-                $options['headers']['Content-Type'] = 'application/json';
+                $headers[] = 'Content-Type: application/json';
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             }
         }
 
-        $this->logger->info('[DEBUG] About to send HTTP request', [
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+
+        $this->logger->info('[DEBUG] About to execute cURL', [
             'app' => 'create_external_conversation',
-            'options' => array_merge($options, ['auth' => ['username' => $username, 'password' => '***']]),
+            'method' => $method,
+            'url' => $url,
         ]);
 
-        try {
-            $response = $client->request($method, $url, $options);
-            
-            $this->logger->info('[DEBUG] HTTP request completed', [
-                'app' => 'create_external_conversation',
-                'responseType' => gettype($response),
-                'responseClass' => is_object($response) ? get_class($response) : 'not an object',
-            ]);
-            
-            if (!is_object($response) || !method_exists($response, 'getBody')) {
-                $this->logger->error('Invalid response object from HTTP client', [
-                    'app' => 'create_external_conversation',
-                    'type' => gettype($response),
-                    'value' => is_string($response) ? substr($response, 0, 200) : json_encode($response),
-                ]);
-                throw new \Exception('Invalid response object from HTTP client');
-            }
-            
-            $body = $response->getBody()->getContents();
-            $this->logger->info('[DEBUG] Response body retrieved', [
-                'app' => 'create_external_conversation',
-                'bodyLength' => strlen($body),
-                'bodyPreview' => substr($body, 0, 500),
-            ]);
-            $decoded = json_decode($body, true);
-            
-            if ($decoded === null && !empty($body)) {
-                // Not valid JSON - likely an error response
-                $this->logger->error('Non-JSON response from external server', [
-                    'app' => 'create_external_conversation',
-                    'url' => $url,
-                    'body' => substr($body, 0, 500),
-                ]);
-                throw new \Exception('Invalid response from external server: not JSON');
-            }
-            
-            return $decoded ?? [];
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $response = $e->getResponse();
-            $body = '';
-            $statusCode = 0;
-            
-            if ($response !== null) {
-                try {
-                    $body = $response->getBody()->getContents();
-                    $statusCode = $response->getStatusCode();
-                } catch (\Exception $ex) {
-                    $body = 'Could not read response body: ' . $ex->getMessage();
-                }
-            }
-            
-            $this->logger->error('HTTP Client Error', [
+        $body = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        $this->logger->info('[DEBUG] cURL completed', [
+            'app' => 'create_external_conversation',
+            'httpCode' => $httpCode,
+            'bodyLength' => strlen($body),
+            'bodyPreview' => substr($body, 0, 500),
+            'curlError' => $error,
+        ]);
+
+        if ($body === false || !empty($error)) {
+            $this->logger->error('cURL request failed', [
                 'app' => 'create_external_conversation',
                 'url' => $url,
-                'status' => $statusCode,
-                'body' => substr($body, 0, 500),
-                'exception_message' => $e->getMessage(),
+                'error' => $error,
             ]);
-            throw new \Exception('HTTP ' . $statusCode . ': ' . $e->getMessage());
-        } catch (\GuzzleHttp\Exception\ServerException $e) {
-            $response = $e->getResponse();
-            $body = '';
-            $statusCode = 0;
-            
-            if ($response !== null) {
-                try {
-                    $body = $response->getBody()->getContents();
-                    $statusCode = $response->getStatusCode();
-                } catch (\Exception $ex) {
-                    $body = 'Could not read response body: ' . $ex->getMessage();
-                }
-            }
-            
-            $this->logger->error('HTTP Server Error', [
-                'app' => 'create_external_conversation',
-                'url' => $url,
-                'status' => $statusCode,
-                'body' => substr($body, 0, 500),
-                'exception_message' => $e->getMessage(),
-            ]);
-            throw new \Exception('HTTP ' . $statusCode . ': ' . $e->getMessage());
-        } catch (\Exception $e) {
-            $this->logger->error('Request failed with exception', [
-                'app' => 'create_external_conversation',
-                'url' => $url,
-                'method' => $method,
-                'exception' => get_class($e),
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            throw $e;
+            throw new \Exception('Request failed: ' . $error);
         }
+
+        if ($httpCode >= 400) {
+            $this->logger->error('HTTP error response', [
+                'app' => 'create_external_conversation',
+                'url' => $url,
+                'httpCode' => $httpCode,
+                'body' => substr($body, 0, 500),
+            ]);
+            throw new \Exception('HTTP ' . $httpCode . ': ' . substr($body, 0, 200));
+        }
+
+        $decoded = json_decode($body, true);
+        
+        if ($decoded === null && !empty($body)) {
+            $this->logger->error('Non-JSON response from external server', [
+                'app' => 'create_external_conversation',
+                'url' => $url,
+                'body' => substr($body, 0, 500),
+            ]);
+            throw new \Exception('Invalid response from external server: not JSON');
+        }
+        
+        return $decoded ?? [];
     }
 
     /**
