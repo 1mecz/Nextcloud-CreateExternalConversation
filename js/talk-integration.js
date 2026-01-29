@@ -1592,7 +1592,7 @@
 
 
             .search-results {
-                position: absolute;
+                position: relative;
                 background: white;
                 border: 1px solid #ddd;
                 border-radius: 4px;
