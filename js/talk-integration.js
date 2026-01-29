@@ -252,14 +252,31 @@
             return;
         }
 
-        // Fetch local conversation and get remote token
+        console.log('[CreateExternalConversation] Looking for external token for local token:', localToken);
+
+        // Try to get remoteToken from local conversation (for federated conversations)
+        // This works when the conversation was created externally and user joined via federation
         fetchConversationAndGetExternalToken(localToken, (remoteToken) => {
             if (remoteToken) {
-                console.log('[CreateExternalConversation] Got remote token, adding participant to external conversation');
+                console.log('[CreateExternalConversation] Got remote token from Talk API, adding participant');
                 addParticipantToExternalConversation(modal, federatedId, remoteToken);
             } else {
-                modal.querySelector('#error-container').style.display = 'block';
-                modal.querySelector('#error-message').textContent = 'Could not find remote token for this conversation.';
+                // No remote token found - ask user to enter external token manually
+                console.log('[CreateExternalConversation] No external token found, asking user');
+                // Hide current modal temporarily
+                modal.style.display = 'none';
+                showExternalTokenModal((userToken) => {
+                    // Show current modal again
+                    modal.style.display = 'flex';
+                    
+                    if (userToken) {
+                        addParticipantToExternalConversation(modal, federatedId, userToken);
+                    } else {
+                        // User cancelled
+                        modal.querySelector('#error-container').style.display = 'block';
+                        modal.querySelector('#error-message').textContent = 'Operation cancelled. External token required to add participant to external conversation.';
+                    }
+                });
             }
         });
     }
