@@ -406,6 +406,16 @@ class ConversationService {
 
         try {
             $response = $client->request($method, $url, $options);
+            
+            if (!is_object($response) || !method_exists($response, 'getBody')) {
+                $this->logger->error('Invalid response object from HTTP client', [
+                    'app' => 'create_external_conversation',
+                    'type' => gettype($response),
+                    'value' => is_string($response) ? substr($response, 0, 200) : json_encode($response),
+                ]);
+                throw new \Exception('Invalid response object from HTTP client');
+            }
+            
             $body = $response->getBody()->getContents();
             $decoded = json_decode($body, true);
             
