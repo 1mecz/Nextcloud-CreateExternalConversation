@@ -33,7 +33,15 @@ class ConversationService {
         string $conversationName,
         array $participants = []
     ): array {
+        $this->logger->info('[DEBUG] createExternalConversation started', [
+            'app' => 'create_external_conversation',
+            'conversationName' => $conversationName,
+            'participantsCount' => count($participants),
+            'participants' => $participants,
+        ]);
+
         if (!$this->settingsService->isConfigured()) {
+            $this->logger->warning('[DEBUG] App not configured', ['app' => 'create_external_conversation']);
             return [
                 'success' => false,
                 'error' => 'App is not configured. Please ask administrator to configure it.',
@@ -42,6 +50,7 @@ class ConversationService {
 
         $conversationName = trim($conversationName);
         if (empty($conversationName)) {
+            $this->logger->warning('[DEBUG] Empty conversation name', ['app' => 'create_external_conversation']);
             return [
                 'success' => false,
                 'error' => 'Conversation name cannot be empty.',
@@ -50,7 +59,15 @@ class ConversationService {
 
         try {
             // Step 1: Create conversation
+            $this->logger->info('[DEBUG] About to create room', [
+                'app' => 'create_external_conversation',
+                'conversationName' => $conversationName,
+            ]);
             $createResult = $this->createRoom($conversationName);
+            $this->logger->info('[DEBUG] Room created', [
+                'app' => 'create_external_conversation',
+                'result' => $createResult,
+            ]);
             
             if (!$createResult['success']) {
                 return $createResult;
@@ -118,12 +135,29 @@ class ConversationService {
         $externalUrl = $this->settingsService->getExternalUrl();
         $url = rtrim($externalUrl, '/') . self::TALK_API_ENDPOINT;
 
+        $this->logger->info('[DEBUG] createRoom called', [
+            'app' => 'create_external_conversation',
+            'roomName' => $roomName,
+            'url' => $url,
+            'externalUrl' => $externalUrl,
+        ]);
+
         $data = [
             'roomType' => 3, // Public conversation (allows guests via link)
             'roomName' => $roomName,
         ];
 
+        $this->logger->info('[DEBUG] About to make POST request', [
+            'app' => 'create_external_conversation',
+            'data' => $data,
+        ]);
+
         $response = $this->makeRequest('POST', $url, $data, true);  // true = form data
+        
+        $this->logger->info('[DEBUG] POST request completed', [
+            'app' => 'create_external_conversation',
+            'response' => $response,
+        ]);
 
         if (!isset($response['ocs']['data']['token'])) {
             return [
@@ -379,10 +413,28 @@ class ConversationService {
      * @param bool $useFormData Whether to send as form data (default: false = JSON)
      */
     private function makeRequest(string $method, string $url, array $data = [], bool $useFormData = false): array {
+        $this->logger->info('[DEBUG] makeRequest started', [
+            'app' => 'create_external_conversation',
+            'method' => $method,
+            'url' => $url,
+            'dataKeys' => array_keys($data),
+            'useFormData' => $useFormData,
+        ]);
+
         $username = $this->settingsService->getUsername();
         $password = $this->settingsService->getPassword();
 
+        $this->logger->info('[DEBUG] Settings retrieved', [
+            'app' => 'create_external_conversation',
+            'username' => $username,
+            'hasPassword' => !empty($password),
+        ]);
+
         $client = $this->clientService->newClient();
+        $this->logger->info('[DEBUG] HTTP client created', [
+            'app' => 'create_external_conversation',
+            'clientClass' => get_class($client),
+        ]);
         
         $options = [
             'auth' => [$username, $password],
@@ -404,8 +456,19 @@ class ConversationService {
             }
         }
 
+        $this->logger->info('[DEBUG] About to send HTTP request', [
+            'app' => 'create_external_conversation',
+            'options' => array_merge($options, ['auth' => ['username' => $username, 'password' => '***']]),
+        ]);
+
         try {
             $response = $client->request($method, $url, $options);
+            
+            $this->logger->info('[DEBUG] HTTP request completed', [
+                'app' => 'create_external_conversation',
+                'responseType' => gettype($response),
+                'responseClass' => is_object($response) ? get_class($response) : 'not an object',
+            ]);
             
             if (!is_object($response) || !method_exists($response, 'getBody')) {
                 $this->logger->error('Invalid response object from HTTP client', [
@@ -417,6 +480,11 @@ class ConversationService {
             }
             
             $body = $response->getBody()->getContents();
+            $this->logger->info('[DEBUG] Response body retrieved', [
+                'app' => 'create_external_conversation',
+                'bodyLength' => strlen($body),
+                'bodyPreview' => substr($body, 0, 500),
+            ]);
             $decoded = json_decode($body, true);
             
             if ($decoded === null && !empty($body)) {
