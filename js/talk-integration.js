@@ -1358,7 +1358,7 @@
                     throw new Error('ocs-invalid');
                 })
                 .catch(() => {
-                    resultsContainer.innerHTML = '<div class="search-result-item">No results (insufficient rights?)</div>';
+                    resultsContainer.innerHTML = '<div class="search-result-item" style="padding: 12px; text-align: center; color: var(--color-text-lighter, #666);">No results (insufficient rights?)</div>';
                     resultsContainer.style.display = 'block';
                 });
             });
@@ -1369,7 +1369,7 @@
         resultsContainer.innerHTML = '';
 
         if (!users || users.length === 0) {
-            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #666;">No users found</div>';
+            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--color-text-lighter, #666);">No users found</div>';
             resultsContainer.style.display = 'block';
             return;
         }
@@ -1380,7 +1380,7 @@
 
             const item = document.createElement('div');
             item.className = 'search-result-item';
-            item.innerHTML = `<div style="font-weight: 500;">${user.displayName}</div><div style="font-size: 12px; color: #666;">${user.id}</div>`;
+            item.innerHTML = `<div style="font-weight: 500;">${user.displayName}</div><div style="font-size: 12px; color: var(--color-text-lighter, #666);">${user.id}</div>`;
             item.dataset.federatedId = user.federatedId;
             item.dataset.displayName = user.displayName;
             
