@@ -385,7 +385,7 @@
             }
             
             searchTimeout = setTimeout(() => {
-                searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer);
+                searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer, searchInput);
             }, 300);
         });
 
@@ -1068,7 +1068,7 @@
         });
     }
 
-    function searchLocalUsers(query, resultsContainer, selectedParticipants, selectedContainer) {
+    function searchLocalUsers(query, resultsContainer, selectedParticipants, selectedContainer, searchInput = null) {
         // Show loading state
         resultsContainer.innerHTML = '<div class="search-result-item">Searching...</div>';
         resultsContainer.style.display = 'block';
@@ -1097,7 +1097,7 @@
                     .filter(u => u.id && u.id !== OC.currentUser);
 
                 if (mapped.length > 0) {
-                    displaySearchResults(mapped, resultsContainer, selectedParticipants, selectedContainer);
+                    displaySearchResults(mapped, resultsContainer, selectedParticipants, selectedContainer, searchInput);
                     return;
                 }
             }
@@ -1119,7 +1119,7 @@
             })
             .then(data => {
                 if (data?.users) {
-                    displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer);
+                    displaySearchResults(data.users, resultsContainer, selectedParticipants, selectedContainer, searchInput);
                     return;
                 }
                 throw new Error('app-invalid');
@@ -1149,7 +1149,7 @@
                             .filter(u => u.id && u.id !== OC.currentUser);
 
                         if (users.length > 0) {
-                            displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer);
+                            displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer, searchInput);
                             return;
                         }
                     }
@@ -1163,7 +1163,7 @@
         });
     }
 
-    function displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer) {
+    function displaySearchResults(users, resultsContainer, selectedParticipants, selectedContainer, searchInput = null) {
         resultsContainer.innerHTML = '';
 
         if (!users || users.length === 0) {
@@ -1205,6 +1205,11 @@
                 addSelectedParticipant(user, selectedParticipants, selectedContainer);
                 // Hide this user from results
                 item.style.display = 'none';
+                // Clear input field after selection
+                if (searchInput) {
+                    searchInput.value = '';
+                    resultsContainer.style.display = 'none';
+                }
             });
 
             resultsContainer.appendChild(item);
