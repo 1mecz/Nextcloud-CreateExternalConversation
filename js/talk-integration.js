@@ -914,58 +914,183 @@
 
         // Create modal
         const modal = document.createElement('div');
-        modal.className = 'create-external-conversation-modal';
-        modal.innerHTML = `
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Create External Conversation</h2>
-                    <button class="modal-close">&times;</button>
+        modal.className = 'create-external-conversation-modal-overlay';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'create-external-conversation-modal-content';
+        modalContent.style.cssText = `
+            background: var(--color-main-background, white);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        `;
+
+        modalContent.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Create External Conversation</h2>
+                <button type="button" class="modal-close-btn" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: #333;
+                    padding: 0;
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0.7;
+                    transition: opacity 0.2s ease;
+                " title="Close">
+                    ×
+                </button>
+            </div>
+            <form id="create-external-conversation-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <div class="form-group" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                    <label for="conversation-name" style="display: block; font-weight: 500; margin-bottom: 8px; flex-shrink: 0;">Conversation Name</label>
+                    <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name" style="
+                        width: 100%;
+                        padding: 10px 12px;
+                        border: 2px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                        transition: border-color 0.2s ease;
+                        flex-shrink: 0;
+                    ">
+                    
+                    <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px; margin-top: 16px; flex-shrink: 0;">Add Participants (optional)</label>
+                    <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off" style="
+                        width: 100%;
+                        padding: 10px 12px;
+                        border: 2px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                        transition: border-color 0.2s ease;
+                        flex-shrink: 0;
+                    ">
+                    <div id="participant-search-results" class="search-results" style="
+                        display: none;
+                        margin-top: 8px;
+                        border: 1px solid var(--color-border, #ddd);
+                        border-radius: 6px;
+                        max-height: 200px;
+                        overflow-y: auto;
+                        background: #f5f5f5;
+                        flex: 1;
+                    "></div>
+                    <div id="selected-participants" class="selected-participants" style="
+                        margin-top: 16px;
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                        min-height: 0;
+                        flex-shrink: 0;
+                    "></div>
                 </div>
-                <div class="modal-body">
-                    <form id="create-external-conversation-form">
-                        <div class="form-group">
-                            <label for="conversation-name">Conversation Name</label>
-                            <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name">
-                        </div>
-                        <div class="form-group">
-                            <label for="participant-search">Add Participants (optional)</label>
-                            <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off">
-                            <div id="participant-search-results" class="search-results" style="display: none;"></div>
-                            <div id="selected-participants" class="selected-participants"></div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Create</button>
-                            <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                        </div>
-                    </form>
-                    <div id="result-container" style="display: none;" class="result-container">
-                        <div class="result-success">
-                            <p><strong>Success!</strong></p>
-                            <p>Conversation created with <span id="participants-count">0</span> participant(s)</p>
-                            <input type="text" id="result-link" readonly class="result-link">
-                            <div class="result-actions">
-                                <button type="button" class="btn btn-primary" id="copy-link-btn">Copy Link</button>
-                                <button type="button" class="btn btn-secondary" id="open-link-btn">Open</button>
-                            </div>
-                        </div>
+                <div style="display: flex; gap: 10px; margin-top: 24px; flex-shrink: 0;">
+                    <button type="submit" class="btn btn-primary" style="
+                        flex: 1;
+                        padding: 10px 16px;
+                        border: none;
+                        border-radius: 6px;
+                        background: var(--color-primary, #0082c9);
+                        color: white;
+                        cursor: pointer;
+                        font-weight: 500;
+                        transition: opacity 0.2s ease;
+                    ">Create</button>
+                </div>
+            </form>
+            <div id="result-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
+                <div class="result-success" style="padding: 12px; background: #28a745; border-radius: 6px; color: white;">
+                    <p style="margin: 0 0 8px 0;"><strong>✓ Success!</strong></p>
+                    <p style="margin: 0 0 12px 0;">Conversation created with <span id="participants-count">0</span> participant(s)</p>
+                    <input type="text" id="result-link" readonly class="result-link" style="
+                        width: 100%;
+                        padding: 8px;
+                        border: 1px solid rgba(255,255,255,0.3);
+                        border-radius: 4px;
+                        background: rgba(255,255,255,0.1);
+                        color: white;
+                        box-sizing: border-box;
+                        margin: 8px 0;
+                    ">
+                    <div class="result-actions" style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-primary" id="copy-link-btn" style="
+                            flex: 1;
+                            padding: 8px 12px;
+                            background: rgba(255,255,255,0.2);
+                            color: white;
+                            border: 1px solid rgba(255,255,255,0.3);
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">Copy Link</button>
+                        <button type="button" class="btn btn-secondary" id="open-link-btn" style="
+                            flex: 1;
+                            padding: 8px 12px;
+                            background: rgba(255,255,255,0.2);
+                            color: white;
+                            border: 1px solid rgba(255,255,255,0.3);
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-weight: 500;
+                        ">Open</button>
                     </div>
-                    <div id="error-container" style="display: none;" class="error-container">
-                        <p id="error-message"></p>
-                    </div>
+                </div>
+            </div>
+            <div id="error-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
+                <div style="padding: 12px; background: #fff5f5; border-radius: 6px; color: #e74c3c; border-left: 4px solid #e74c3c;">
+                    <p id="error-message" style="margin: 0;"></p>
                 </div>
             </div>
         `;
 
+        modal.appendChild(modalContent);
         document.body.appendChild(modal);
 
         // Store selected participants
         const selectedParticipants = new Set();
 
+        // Close button handler
+        const closeBtn = modalContent.querySelector('.modal-close-btn');
+        const closeModal = () => {
+            modal.remove();
+        };
+        closeBtn.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
         // Handle participant search
-        const searchInput = modal.querySelector('#participant-search');
-        const searchResults = modal.querySelector('#participant-search-results');
-        const selectedContainer = modal.querySelector('#selected-participants');
+        const searchInput = modalContent.querySelector('#participant-search');
+        const searchResults = modalContent.querySelector('#participant-search-results');
+        const selectedContainer = modalContent.querySelector('#selected-participants');
         
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
@@ -978,37 +1103,71 @@
             }
             
             searchTimeout = setTimeout(() => {
-                searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer);
+                searchLocalUsers(query, searchResults, selectedParticipants, selectedContainer, searchInput);
             }, 300);
         });
 
-        // Handle close
-        modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-        modal.querySelector('.modal-overlay').addEventListener('click', () => modal.remove());
-        modal.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
+        // Add focus/blur styling to inputs
+        const nameInput = modalContent.querySelector('#conversation-name');
+        nameInput.addEventListener('focus', () => {
+            nameInput.style.borderColor = '#0082c9';
+            nameInput.style.boxShadow = '0 0 0 3px rgba(0, 130, 201, 0.1)';
+        });
+        
+        nameInput.addEventListener('blur', () => {
+            nameInput.style.borderColor = 'var(--color-border, #ddd)';
+            nameInput.style.boxShadow = 'none';
+        });
+        
+        searchInput.addEventListener('focus', () => {
+            searchInput.style.borderColor = '#0082c9';
+            searchInput.style.boxShadow = '0 0 0 3px rgba(0, 130, 201, 0.1)';
+        });
+        
+        searchInput.addEventListener('blur', () => {
+            searchInput.style.borderColor = 'var(--color-border, #ddd)';
+            searchInput.style.boxShadow = 'none';
+        });
 
         // Handle form submit
-        const form = modal.querySelector('#create-external-conversation-form');
+        const form = modalContent.querySelector('#create-external-conversation-form');
+        const createBtn = form.querySelector('button[type="submit"]');
+        let isProcessing = false;
+        
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            handleCreateConversation(modal, Array.from(selectedParticipants));
+            
+            // Prevent multiple submissions
+            if (isProcessing || createBtn.disabled) {
+                return;
+            }
+            
+            isProcessing = true;
+            createBtn.disabled = true;
+            createBtn.style.opacity = '0.6';
+            createBtn.style.cursor = 'not-allowed';
+            createBtn.style.pointerEvents = 'none';
+            
+            handleCreateConversation(modal, Array.from(selectedParticipants), createBtn, () => {
+                isProcessing = false;
+            });
         });
 
         // Handle result actions
-        modal.querySelector('#copy-link-btn')?.addEventListener('click', () => {
-            const link = modal.querySelector('#result-link');
+        modalContent.querySelector('#copy-link-btn').addEventListener('click', () => {
+            const link = modalContent.querySelector('#result-link');
             link.select();
             document.execCommand('copy');
-            alert('Link copied to clipboard!');
+            showNotification('Link copied to clipboard!', 'success');
         });
 
-        modal.querySelector('#open-link-btn')?.addEventListener('click', () => {
-            const link = modal.querySelector('#result-link').value;
+        modalContent.querySelector('#open-link-btn').addEventListener('click', () => {
+            const link = modalContent.querySelector('#result-link').value;
             window.open(link, '_blank');
         });
     }
 
-    function handleCreateConversation(modal, participants = []) {
+    function handleCreateConversation(modal, participants = [], createBtn = null, onComplete = null) {
         const conversationName = modal.querySelector('#conversation-name').value.trim();
         const form = modal.querySelector('#create-external-conversation-form');
         const resultContainer = modal.querySelector('#result-container');
@@ -1017,6 +1176,14 @@
         if (!conversationName) {
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Please enter a conversation name';
+            // Re-enable button on error
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.style.opacity = '1';
+                createBtn.style.cursor = 'pointer';
+                createBtn.style.pointerEvents = 'auto';
+            }
+            if (onComplete) onComplete();
             return;
         }
 
@@ -1057,6 +1224,8 @@
 
                 // Try to refresh Talk conversations without full page reload
                 refreshTalkList();
+                
+                if (onComplete) onComplete();
             } else {
                 throw new Error(data.ocs.data.error || 'Unknown error');
             }
@@ -1065,6 +1234,15 @@
             console.error('[CreateExternalConversation] Error:', error);
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
+            
+            // Re-enable button on error
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.style.opacity = '1';
+                createBtn.style.cursor = 'pointer';
+                createBtn.style.pointerEvents = 'auto';
+            }
+            if (onComplete) onComplete();
         });
     }
 
@@ -1372,39 +1550,12 @@
                 fill: currentColor;
             }
 
-            .create-external-conversation-modal {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                z-index: 10000 !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            .create-external-conversation-modal-overlay {
+                /* Inline styled in JavaScript */
             }
 
-            .create-external-conversation-modal .modal-overlay {
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                background-color: rgba(0, 0, 0, 0.5) !important;
-                cursor: pointer !important;
-            }
-
-            .create-external-conversation-modal .modal-content {
-                position: relative !important;
-                background-color: white !important;
-                border-radius: 8px !important;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
-                max-width: 500px !important;
-                width: 90% !important;
-                max-height: 80vh !important;
-                overflow-y: auto !important;
-                z-index: 1000000 !important;
+            .create-external-conversation-modal-content {
+                /* Inline styled in JavaScript */
             }
 
             .add-participant-modal-overlay {
@@ -1415,130 +1566,6 @@
                 /* Inline styled in JavaScript */
             }
 
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px;
-                border-bottom: 1px solid #eee;
-            }
-
-            .modal-header h2 {
-                margin: 0;
-                font-size: 18px;
-            }
-
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 24px;
-                cursor: pointer;
-                color: #666;
-            }
-
-            .modal-body {
-                padding: 20px;
-            }
-
-            .form-group {
-                margin-bottom: 15px;
-                position: relative; /* so search results anchor correctly */
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 5px;
-                font-weight: 500;
-                color: #333;
-            }
-
-            .form-group input {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 14px;
-                box-sizing: border-box;
-            }
-
-            .form-group input:focus {
-                outline: none;
-                border-color: var(--color-primary, #0082c9);
-                box-shadow: 0 0 0 2px rgba(0, 130, 201, 0.1);
-            }
-
-            .form-actions {
-                display: flex;
-                gap: 10px;
-                justify-content: flex-end;
-                margin-top: 20px;
-            }
-
-            .btn {
-                padding: 8px 16px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: background-color 0.2s;
-            }
-
-            .btn-primary {
-                background-color: var(--color-primary, #0082c9);
-                color: white;
-            }
-
-            .btn-primary:hover {
-                background-color: var(--color-primary-hover, #006ba3);
-            }
-
-            .btn-secondary {
-                background-color: #f0f0f0;
-                color: #333;
-            }
-
-            .btn-secondary:hover {
-                background-color: #e0e0e0;
-            }
-
-            .result-container {
-                padding: 20px;
-                background-color: #f0f9ff;
-                border-radius: 4px;
-            }
-
-            .result-success p {
-                margin: 10px 0;
-                color: #333;
-            }
-
-            .result-link {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                margin: 10px 0;
-                font-size: 12px;
-                box-sizing: border-box;
-            }
-
-            .result-actions {
-                display: flex;
-                gap: 10px;
-                margin-top: 15px;
-            }
-
-            .error-container {
-                padding: 15px;
-                background-color: #fff3cd;
-                border-left: 4px solid #ff6b6b;
-                border-radius: 4px;
-                color: #333;
-            }
-
-            .error-container p {
-                margin: 0;
-            }
 
             .search-results {
                 position: absolute;
