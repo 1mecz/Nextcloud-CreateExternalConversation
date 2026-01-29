@@ -216,23 +216,10 @@ class ConversationService {
         ];
 
         try {
-            $client = $this->clientService->newClient();
-            $response = $client->request('POST', $url, [
-                'auth' => [$guestUser, $guestPassword],
-                'form_params' => $data,
-                'verify' => false,  // Skip SSL verification for self-signed certs
-                'headers' => [
-                    'OCS-APIRequest' => 'true',
-                    'Accept' => 'application/json',
-                ],
-            ]);
-
-            $body = $response->getBody()->getContents();
-            $responseData = json_decode($body, true) ?? [];
+            $responseData = $this->makeRequest('POST', $url, $data, true);
             
             $this->logger->info('Response from external server', [
                 'app' => 'create_external_conversation',
-                'body' => substr($body, 0, 500),
                 'decoded' => $responseData,
             ]);
             
