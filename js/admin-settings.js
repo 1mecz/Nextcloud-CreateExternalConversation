@@ -5,6 +5,111 @@
 (function() {
     'use strict';
 
+    // Notification system
+    function showNotification(message, type = 'info', duration = 3000) {
+        // Create notification container if it doesn't exist
+        let notificationContainer = document.getElementById('external-conversation-notifications');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'external-conversation-notifications';
+            notificationContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 100000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-width: 400px;
+            `;
+            document.body.appendChild(notificationContainer);
+        }
+
+        // Create notification element
+        const notification = document.createElement('div');
+        
+        let backgroundColor, textColor, icon;
+        if (type === 'success') {
+            backgroundColor = '#28a745';
+            textColor = 'white';
+            icon = '✓';
+        } else if (type === 'error') {
+            backgroundColor = '#e74c3c';
+            textColor = 'white';
+            icon = '✕';
+        } else if (type === 'info') {
+            backgroundColor = '#0082c9';
+            textColor = 'white';
+            icon = 'ℹ';
+        }
+
+        notification.style.cssText = `
+            padding: 12px 16px;
+            background: ${backgroundColor};
+            color: ${textColor};
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+            word-wrap: break-word;
+            word-break: break-word;
+        `;
+
+        notification.innerHTML = `<span style="margin-right: 8px;">${icon}</span>${message}`;
+        notificationContainer.appendChild(notification);
+
+        // Auto-remove notification after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    notification.remove();
+                    // Remove container if empty
+                    if (notificationContainer.children.length === 0) {
+                        notificationContainer.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
+        return notification;
+    }
+
+    // Add CSS animations
+    function addNotificationStyles() {
+        if (!document.getElementById('external-conversation-notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'external-conversation-notification-styles';
+            style.innerHTML = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(-100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(-100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Call this when page loads
+    addNotificationStyles();
+
     document.addEventListener('DOMContentLoaded', function() {
         const settingsContainer = document.getElementById('create-external-conversation-admin-settings');
         
@@ -170,16 +275,10 @@
         // Create conversation handler
         document.getElementById('create-conversation').addEventListener('click', function() {
             const convName = document.getElementById('conv-name').value.trim();
-            const infoContainer = document.getElementById('info-container');
-            const errorContainer = document.getElementById('error-container');
-            const infoMessage = document.getElementById('info-message');
-            const errorMessage = document.getElementById('error-message');
             const createBtn = document.getElementById('create-conversation');
             
             if (!convName) {
-                errorContainer.style.display = 'block';
-                infoContainer.style.display = 'none';
-                errorMessage.textContent = 'Please enter conversation name';
+                showNotification('Please enter conversation name', 'error');
                 return;
             }
             
@@ -187,9 +286,7 @@
             createBtn.disabled = true;
             createBtn.style.opacity = '0.6';
             createBtn.style.cursor = 'not-allowed';
-            infoContainer.style.display = 'block';
-            errorContainer.style.display = 'none';
-            infoMessage.textContent = 'Creating conversation...';
+            showNotification('Creating conversation...', 'info', 0);
             
             fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
                 method: 'POST',
@@ -217,7 +314,7 @@
             })
             .then(result => {
                 if (result.ocs && result.ocs.data && result.ocs.data.success) {
-                    infoContainer.style.display = 'none';
+                    showNotification('Room created successfully!', 'success');
                     
                     // Show result with URL
                     const url = result.ocs.data.link;
@@ -235,25 +332,19 @@
                         createBtn.style.cursor = 'pointer';
                     }, 3000);
                     
-                    console.log('Conversation created:', result.ocs.data);
-                } else {
-                    throw new Error(result.ocs?.data?.error || 'Failed to create conversation');
-                }
-            })
-            .catch(error => {
-                infoContainer.style.display = 'none';
-                errorContainer.style.display = 'block';
-                errorMessage.textContent = 'Error: ' + error.message;
-                createBtn.disabled = false;
-                createBtn.style.opacity = '1';
-                createBtn.style.cursor = 'pointer';
-                console.error('Failed to create conversation:', error);
-            });
+                console.log('Conversation created:', result.ocs.data);
+            } else {
+                throw new Error(result.ocs?.data?.error || 'Failed to create conversation');
+            }
+        })
+        .catch(error => {
+            showNotification('Error: ' + error.message, 'error');
+            const createBtn = document.getElementById('create-conversation');
+            createBtn.disabled = false;
+            createBtn.style.opacity = '1';
+            createBtn.style.cursor = 'pointer';
+            console.error('Failed to create conversation:', error);
         });
-        
-        // Add focus/blur styling to conversation name input
-        const convNameInput = document.getElementById('conv-name');
-        convNameInput.addEventListener('focus', () => {
             convNameInput.style.borderColor = '#0082c9';
             convNameInput.style.boxShadow = '0 0 0 3px rgba(0, 130, 201, 0.1)';
         });

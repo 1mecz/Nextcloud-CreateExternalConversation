@@ -5,6 +5,111 @@
 (function() {
     'use strict';
 
+    // Notification system
+    function showNotification(message, type = 'info', duration = 3000) {
+        // Create notification container if it doesn't exist
+        let notificationContainer = document.getElementById('external-conversation-notifications');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'external-conversation-notifications';
+            notificationContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 100000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-width: 400px;
+            `;
+            document.body.appendChild(notificationContainer);
+        }
+
+        // Create notification element
+        const notification = document.createElement('div');
+        
+        let backgroundColor, textColor, icon;
+        if (type === 'success') {
+            backgroundColor = '#28a745';
+            textColor = 'white';
+            icon = '✓';
+        } else if (type === 'error') {
+            backgroundColor = '#e74c3c';
+            textColor = 'white';
+            icon = '✕';
+        } else if (type === 'info') {
+            backgroundColor = '#0082c9';
+            textColor = 'white';
+            icon = 'ℹ';
+        }
+
+        notification.style.cssText = `
+            padding: 12px 16px;
+            background: ${backgroundColor};
+            color: ${textColor};
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+            word-wrap: break-word;
+            word-break: break-word;
+        `;
+
+        notification.innerHTML = `<span style="margin-right: 8px;">${icon}</span>${message}`;
+        notificationContainer.appendChild(notification);
+
+        // Auto-remove notification after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    notification.remove();
+                    // Remove container if empty
+                    if (notificationContainer.children.length === 0) {
+                        notificationContainer.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
+        return notification;
+    }
+
+    // Add CSS animations
+    function addNotificationStyles() {
+        if (!document.getElementById('external-conversation-notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'external-conversation-notification-styles';
+            style.innerHTML = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(-100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(-100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Call this when page loads
+    addNotificationStyles();
+
     // Wait for Talk app to be ready
     const waitForTalk = setInterval(function() {
         if (window.OCA && window.OCA.Talk) {
@@ -154,8 +259,9 @@
             max-width: 500px;
             width: 90%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
         `;
 
         modalContent.innerHTML = `
@@ -179,9 +285,9 @@
                     ×
                 </button>
             </div>
-            <form id="add-participant-form">
-                <div class="form-group">
-                    <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">Search users</label>
+            <form id="add-participant-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <div class="form-group" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                    <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px; flex-shrink: 0;">Search users</label>
                     <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off" style="
                         width: 100%;
                         padding: 10px 12px;
@@ -190,15 +296,17 @@
                         font-size: 14px;
                         box-sizing: border-box;
                         transition: border-color 0.2s ease;
+                        flex-shrink: 0;
                     ">
                     <div id="participant-search-results" class="search-results" style="
                         display: none;
                         margin-top: 8px;
                         border: 1px solid var(--color-border, #ddd);
                         border-radius: 6px;
-                        max-height: 250px;
+                        max-height: 200px;
                         overflow-y: auto;
                         background: #f5f5f5;
+                        flex: 1;
                     "></div>
                     <div id="selected-participants" class="selected-participants" style="
                         margin-top: 16px;
@@ -206,9 +314,10 @@
                         flex-wrap: wrap;
                         gap: 8px;
                         min-height: 0;
+                        flex-shrink: 0;
                     "></div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 24px;">
+                <div style="display: flex; gap: 10px; margin-top: 24px; flex-shrink: 0;">
                     <button type="submit" class="btn btn-primary" id="add-btn" style="
                         flex: 1;
                         padding: 10px 16px;
@@ -222,18 +331,18 @@
                     ">Add</button>
                 </div>
             </form>
-            <div id="result-container" style="display: none; margin-top: 20px;">
+            <div id="result-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
                 <div class="result-success" style="padding: 12px; background: #28a745; border-radius: 6px; color: white;">
                     <p style="margin: 0 0 8px 0;"><strong>✓ Success!</strong></p>
                     <p style="margin: 0;">Participant added: <span id="added-participant"></span></p>
                 </div>
             </div>
-            <div id="error-container" style="display: none; margin-top: 20px;">
+            <div id="error-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
                 <div style="padding: 12px; background: var(--color-error-light, #fff5f5); border-radius: 6px; color: var(--color-error, #e74c3c);">
                     <p id="error-message" style="margin: 0;"></p>
                 </div>
             </div>
-            <div id="info-container" style="display: none; margin-top: 20px;">
+            <div id="info-container" style="display: none; margin-top: 20px; flex-shrink: 0;">
                 <div style="padding: 12px; background: #e7f3ff; border-radius: 6px; color: #0082c9; border-left: 4px solid #0082c9;">
                     <p id="info-message" style="margin: 0; font-weight: 500;"></p>
                 </div>
@@ -393,8 +502,8 @@
             const errorMessage = modal.querySelector('#error-message');
             const resultContainer = modal.querySelector('#result-container');
 
-            infoContainer.style.display = 'block';
-            infoMessage.textContent = `Adding ${federatedIds.length} participants...`;
+            // Show notification instead of modal message
+            showNotification(`Adding ${federatedIds.length} participants...`, 'info', 0);
 
             let chain = Promise.resolve();
             federatedIds.forEach((id) => {
@@ -404,12 +513,15 @@
             chain
                 .then(() => {
                     infoContainer.style.display = 'none';
-                    resultContainer.style.display = 'block';
+                    resultContainer.style.display = 'none';
+                    showNotification(`Successfully added ${federatedIds.length} participants!`, 'success');
+                    // Close modal after 2 seconds
+                    setTimeout(() => modal.remove(), 2000);
                 })
                 .catch((err) => {
                     infoContainer.style.display = 'none';
-                    errorContainer.style.display = 'block';
-                    errorMessage.textContent = 'Error: ' + err.message;
+                    errorContainer.style.display = 'none';
+                    showNotification('Error: ' + err.message, 'error');
                     // Re-enable button on error
                     addBtn.disabled = false;
                     addBtn.style.opacity = '1';
@@ -532,6 +644,7 @@
                 if (options.closeOnSuccess) {
                     form.style.display = 'none';
                     addedParticipantEl.textContent = federatedId;
+                    showNotification(`Participant ${federatedId} added successfully!`, 'success');
 
                     // Close modal after 2 seconds
                     setTimeout(() => modal.remove(), 2000);
@@ -556,8 +669,8 @@
         })
         .catch(error => {
             console.error('[CreateExternalConversation] Error:', error);
-            errorContainer.style.display = 'block';
-            modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
+            errorContainer.style.display = 'none';
+            showNotification('Error: ' + error.message, 'error');
             
             // Re-enable button on error
             if (addBtn) {
