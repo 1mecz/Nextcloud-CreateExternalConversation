@@ -209,7 +209,7 @@
                     "></div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 24px;">
-                    <button type="submit" class="btn btn-primary" style="
+                    <button type="submit" class="btn btn-primary" id="add-btn" style="
                         flex: 1;
                         padding: 10px 16px;
                         border: none;
@@ -218,21 +218,24 @@
                         color: white;
                         cursor: pointer;
                         font-weight: 500;
+                        transition: opacity 0.2s ease, background 0.2s ease;
                     ">Add</button>
                     <button type="button" class="btn btn-secondary" id="cancel-btn" style="
                         flex: 1;
                         padding: 10px 16px;
-                        border: 1px solid var(--color-border, #ddd);
+                        border: 1px solid var(--color-border, #999);
                         border-radius: 6px;
-                        background: transparent;
+                        background: #f5f5f5;
                         cursor: pointer;
                         font-weight: 500;
+                        color: #333;
+                        transition: background 0.2s ease;
                     ">Cancel</button>
                 </div>
             </form>
             <div id="result-container" style="display: none; margin-top: 20px;">
-                <div class="result-success" style="padding: 12px; background: var(--color-success-light, #f0f9ff); border-radius: 6px; color: var(--color-success, #46ba61);">
-                    <p style="margin: 0 0 8px 0;"><strong>Success!</strong></p>
+                <div class="result-success" style="padding: 12px; background: #28a745; border-radius: 6px; color: white;">
+                    <p style="margin: 0 0 8px 0;"><strong>✓ Success!</strong></p>
                     <p style="margin: 0;">Participant added: <span id="added-participant"></span></p>
                 </div>
             </div>
@@ -242,8 +245,8 @@
                 </div>
             </div>
             <div id="info-container" style="display: none; margin-top: 20px;">
-                <div style="padding: 12px; background: var(--color-info-light, #f0f5ff); border-radius: 6px; color: var(--color-info, #0082c9);">
-                    <p id="info-message" style="margin: 0;"></p>
+                <div style="padding: 12px; background: #e7f3ff; border-radius: 6px; color: #0082c9; border-left: 4px solid #0082c9;">
+                    <p id="info-message" style="margin: 0; font-weight: 500;"></p>
                 </div>
             </div>
         `;
@@ -309,6 +312,8 @@
 
         // Handle form submit
         const form = modalContent.querySelector('#add-participant-form');
+        const addBtn = modalContent.querySelector('#add-btn');
+        
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (selectedParticipants.size === 0) {
@@ -317,22 +322,32 @@
                 modalContent.querySelector('#error-message').textContent = 'Please select a participant';
                 return;
             }
+            
+            // Disable Add button during submission
+            addBtn.disabled = true;
+            addBtn.style.opacity = '0.6';
+            addBtn.style.cursor = 'not-allowed';
+            
             const participants = Array.from(selectedParticipants);
             if (participants.length === 1) {
-                handleAddParticipant(modal, participants[0]);
+                handleAddParticipant(modal, participants[0], addBtn);
             } else {
-                handleAddParticipants(modal, participants);
+                handleAddParticipants(modal, participants, addBtn);
             }
         });
     }
 
-    function handleAddParticipant(modal, federatedId) {
+    function handleAddParticipant(modal, federatedId, addBtn) {
         // Get local conversation token
         const localToken = getConversationToken();
 
         if (!localToken) {
             modal.querySelector('#error-container').style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: Could not find conversation token. Please reload the page.';
+            // Re-enable button on error
+            addBtn.disabled = false;
+            addBtn.style.opacity = '1';
+            addBtn.style.cursor = 'pointer';
             return;
         }
 
@@ -343,7 +358,7 @@
         fetchConversationAndGetExternalToken(localToken, (remoteToken) => {
             if (remoteToken) {
                 console.log('[CreateExternalConversation] Got remote token from Talk API, adding participant');
-                addParticipantToExternalConversation(modal, federatedId, remoteToken);
+                addParticipantToExternalConversation(modal, federatedId, remoteToken, { closeOnSuccess: true }, addBtn);
             } else {
                 // No remote token found - ask user to enter external token manually
                 console.log('[CreateExternalConversation] No external token found, asking user');
@@ -354,24 +369,32 @@
                     modal.style.display = 'flex';
                     
                     if (userToken) {
-                        addParticipantToExternalConversation(modal, federatedId, userToken);
+                        addParticipantToExternalConversation(modal, federatedId, userToken, { closeOnSuccess: true }, addBtn);
                     } else {
                         // User cancelled
                         modal.querySelector('#error-container').style.display = 'block';
                         modal.querySelector('#error-message').textContent = 'Operation cancelled. External token required to add participant to external conversation.';
+                        // Re-enable button on cancel
+                        addBtn.disabled = false;
+                        addBtn.style.opacity = '1';
+                        addBtn.style.cursor = 'pointer';
                     }
                 });
             }
         });
     }
 
-    function handleAddParticipants(modal, federatedIds) {
+    function handleAddParticipants(modal, federatedIds, addBtn) {
         // Get local conversation token
         const localToken = getConversationToken();
 
         if (!localToken) {
             modal.querySelector('#error-container').style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: Could not find conversation token. Please reload the page.';
+            // Re-enable button on error
+            addBtn.disabled = false;
+            addBtn.style.opacity = '1';
+            addBtn.style.cursor = 'pointer';
             return;
         }
 
@@ -380,22 +403,29 @@
             const infoMessage = modal.querySelector('#info-message');
             const errorContainer = modal.querySelector('#error-container');
             const errorMessage = modal.querySelector('#error-message');
+            const resultContainer = modal.querySelector('#result-container');
 
             infoContainer.style.display = 'block';
             infoMessage.textContent = `Adding ${federatedIds.length} participants...`;
 
             let chain = Promise.resolve();
             federatedIds.forEach((id) => {
-                chain = chain.then(() => addParticipantToExternalConversation(modal, id, externalToken, { closeOnSuccess: false }));
+                chain = chain.then(() => addParticipantToExternalConversation(modal, id, externalToken, { closeOnSuccess: false }, addBtn));
             });
 
             chain
                 .then(() => {
-                    infoMessage.textContent = `Added ${federatedIds.length} participants.`;
+                    infoContainer.style.display = 'none';
+                    resultContainer.style.display = 'block';
                 })
                 .catch((err) => {
+                    infoContainer.style.display = 'none';
                     errorContainer.style.display = 'block';
                     errorMessage.textContent = 'Error: ' + err.message;
+                    // Re-enable button on error
+                    addBtn.disabled = false;
+                    addBtn.style.opacity = '1';
+                    addBtn.style.cursor = 'pointer';
                 });
         };
 
@@ -416,6 +446,10 @@
                         // User cancelled
                         modal.querySelector('#error-container').style.display = 'block';
                         modal.querySelector('#error-message').textContent = 'Operation cancelled. External token required to add participants to external conversation.';
+                        // Re-enable button on cancel
+                        addBtn.disabled = false;
+                        addBtn.style.opacity = '1';
+                        addBtn.style.cursor = 'pointer';
                     }
                 });
             }
@@ -455,7 +489,7 @@
         });
     }
 
-    function addParticipantToExternalConversation(modal, federatedId, externalToken, options = { closeOnSuccess: true }) {
+    function addParticipantToExternalConversation(modal, federatedId, externalToken, options = { closeOnSuccess: true }, addBtn = null) {
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
@@ -517,6 +551,13 @@
                     // Append participant to list in-place
                     const current = addedParticipantEl.textContent.trim();
                     addedParticipantEl.textContent = current ? `${current}, ${federatedId}` : federatedId;
+                    
+                    // Re-enable button after all participants are added
+                    if (addBtn) {
+                        addBtn.disabled = false;
+                        addBtn.style.opacity = '1';
+                        addBtn.style.cursor = 'pointer';
+                    }
                 }
             } else if (hasError) {
                 throw new Error(data.ocs.data.error);
@@ -529,6 +570,13 @@
             console.error('[CreateExternalConversation] Error:', error);
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
+            
+            // Re-enable button on error
+            if (addBtn) {
+                addBtn.disabled = false;
+                addBtn.style.opacity = '1';
+                addBtn.style.cursor = 'pointer';
+            }
         });
     }
 
