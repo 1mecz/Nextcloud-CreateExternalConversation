@@ -515,15 +515,15 @@
             return;
         }
 
+        // Show notification immediately that we're adding participants
+        const addingNotification = showNotification(`Adding ${federatedIds.length} participants...`, 'info', 0);
+
         const runAdditions = (externalToken) => {
             const infoContainer = modal.querySelector('#info-container');
             const infoMessage = modal.querySelector('#info-message');
             const errorContainer = modal.querySelector('#error-container');
             const errorMessage = modal.querySelector('#error-message');
             const resultContainer = modal.querySelector('#result-container');
-
-            // Show notification instead of modal message
-            const addingNotification = showNotification(`Adding ${federatedIds.length} participants...`, 'info', 0);
 
             let chain = Promise.resolve();
             federatedIds.forEach((id) => {
