@@ -256,16 +256,17 @@
             background: var(--color-main-background, white);
             border-radius: 12px;
             padding: 24px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             max-height: 90vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         `;
 
         modalContent.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
                 <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Add Participant to External Conversation</h2>
                 <button type="button" class="modal-close-btn" style="
                     background: none;
@@ -285,8 +286,8 @@
                     ×
                 </button>
             </div>
-            <form id="add-participant-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
-                <div class="form-group" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <form id="add-participant-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0;">
+                <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0;">
                     <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px; flex-shrink: 0;">Search users</label>
                     <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off" style="
                         width: 100%;
@@ -303,10 +304,10 @@
                         margin-top: 8px;
                         border: 1px solid var(--color-border, #ddd);
                         border-radius: 6px;
-                        max-height: 200px;
                         overflow-y: auto;
                         background: #f5f5f5;
                         flex: 1;
+                        min-height: 0;
                     "></div>
                     <div id="selected-participants" class="selected-participants" style="
                         margin-top: 16px;
@@ -934,7 +935,7 @@
             background: var(--color-main-background, white);
             border-radius: 12px;
             padding: 24px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             max-height: 90vh;
@@ -964,8 +965,8 @@
                     ×
                 </button>
             </div>
-            <form id="create-external-conversation-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
-                <div class="form-group" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <form id="create-external-conversation-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0;">
+                <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0;">
                     <label for="conversation-name" style="display: block; font-weight: 500; margin-bottom: 8px; flex-shrink: 0;">Conversation Name</label>
                     <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name" style="
                         width: 100%;
@@ -978,8 +979,8 @@
                         flex-shrink: 0;
                     ">
                     
-                    <label for="participant-search" style="display: block; font-weight: 500; margin-bottom: 8px; margin-top: 16px; flex-shrink: 0;">Add Participants (optional)</label>
-                    <input type="text" id="participant-search" placeholder="Search users..." autocomplete="off" style="
+                    <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px; margin-top: 16px; flex-shrink: 0;">Add Participants (optional)</label>
+                    <input type="text" id="conv-participant-search" placeholder="Search users..." autocomplete="off" style="
                         width: 100%;
                         padding: 10px 12px;
                         border: 2px solid var(--color-border, #ddd);
@@ -989,17 +990,17 @@
                         transition: border-color 0.2s ease;
                         flex-shrink: 0;
                     ">
-                    <div id="participant-search-results" class="search-results" style="
+                    <div id="conv-participant-search-results" class="search-results" style="
                         display: none;
                         margin-top: 8px;
                         border: 1px solid var(--color-border, #ddd);
                         border-radius: 6px;
-                        max-height: 200px;
                         overflow-y: auto;
                         background: #f5f5f5;
                         flex: 1;
+                        min-height: 0;
                     "></div>
-                    <div id="selected-participants" class="selected-participants" style="
+                    <div id="conv-selected-participants" class="selected-participants" style="
                         margin-top: 16px;
                         display: flex;
                         flex-wrap: wrap;
@@ -1088,9 +1089,9 @@
         });
 
         // Handle participant search
-        const searchInput = modalContent.querySelector('#participant-search');
-        const searchResults = modalContent.querySelector('#participant-search-results');
-        const selectedContainer = modalContent.querySelector('#selected-participants');
+        const searchInput = modalContent.querySelector('#conv-participant-search');
+        const searchResults = modalContent.querySelector('#conv-participant-search-results');
+        const selectedContainer = modalContent.querySelector('#conv-selected-participants');
         
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
