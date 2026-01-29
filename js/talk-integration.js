@@ -220,17 +220,6 @@
                         font-weight: 500;
                         transition: opacity 0.2s ease, background 0.2s ease;
                     ">Add</button>
-                    <button type="button" class="btn btn-secondary" id="cancel-btn" style="
-                        flex: 1;
-                        padding: 10px 16px;
-                        border: 1px solid var(--color-border, #999);
-                        border-radius: 6px;
-                        background: #f5f5f5;
-                        cursor: pointer;
-                        font-weight: 500;
-                        color: #333;
-                        transition: background 0.2s ease;
-                    ">Cancel</button>
                 </div>
             </form>
             <div id="result-container" style="display: none; margin-top: 20px;">
@@ -308,7 +297,6 @@
                 modal.remove();
             }
         });
-        modalContent.querySelector('#cancel-btn').addEventListener('click', () => modal.remove());
 
         // Handle form submit
         const form = modalContent.querySelector('#add-participant-form');
