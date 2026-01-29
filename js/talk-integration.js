@@ -237,8 +237,12 @@
                 modalContent.querySelector('#error-message').textContent = 'Please select a participant';
                 return;
             }
-            const participant = Array.from(selectedParticipants)[0];
-            handleAddParticipant(modal, participant);
+            const participants = Array.from(selectedParticipants);
+            if (participants.length === 1) {
+                handleAddParticipant(modal, participants[0]);
+            } else {
+                handleAddParticipants(modal, participants);
+            }
         });
     }
 
@@ -281,6 +285,63 @@
         });
     }
 
+    function handleAddParticipants(modal, federatedIds) {
+        // Get local conversation token
+        const localToken = getConversationToken();
+
+        if (!localToken) {
+            modal.querySelector('#error-container').style.display = 'block';
+            modal.querySelector('#error-message').textContent = 'Error: Could not find conversation token. Please reload the page.';
+            return;
+        }
+
+        const runAdditions = (externalToken) => {
+            const infoContainer = modal.querySelector('#info-container');
+            const infoMessage = modal.querySelector('#info-message');
+            const errorContainer = modal.querySelector('#error-container');
+            const errorMessage = modal.querySelector('#error-message');
+
+            infoContainer.style.display = 'block';
+            infoMessage.textContent = `Adding ${federatedIds.length} participants...`;
+
+            let chain = Promise.resolve();
+            federatedIds.forEach((id) => {
+                chain = chain.then(() => addParticipantToExternalConversation(modal, id, externalToken, { closeOnSuccess: false }));
+            });
+
+            chain
+                .then(() => {
+                    infoMessage.textContent = `Added ${federatedIds.length} participants.`;
+                })
+                .catch((err) => {
+                    errorContainer.style.display = 'block';
+                    errorMessage.textContent = 'Error: ' + err.message;
+                });
+        };
+
+        // Try to get remoteToken from local conversation (for federated conversations)
+        fetchConversationAndGetExternalToken(localToken, (remoteToken) => {
+            if (remoteToken) {
+                runAdditions(remoteToken);
+            } else {
+                // No remote token found - ask user to enter external token manually
+                modal.style.display = 'none';
+                showExternalTokenModal((userToken) => {
+                    // Show current modal again
+                    modal.style.display = 'flex';
+
+                    if (userToken) {
+                        runAdditions(userToken);
+                    } else {
+                        // User cancelled
+                        modal.querySelector('#error-container').style.display = 'block';
+                        modal.querySelector('#error-message').textContent = 'Operation cancelled. External token required to add participants to external conversation.';
+                    }
+                });
+            }
+        });
+    }
+
     function fetchConversationAndGetExternalToken(localToken, callback) {
         // Fetch local conversation info from Talk API
         fetch(`/ocs/v2.php/apps/spreed/api/v4/room/${encodeURIComponent(localToken)}?format=json`, {
@@ -314,10 +375,11 @@
         });
     }
 
-    function addParticipantToExternalConversation(modal, federatedId, externalToken) {
+    function addParticipantToExternalConversation(modal, federatedId, externalToken, options = { closeOnSuccess: true }) {
         const form = modal.querySelector('#add-participant-form');
         const resultContainer = modal.querySelector('#result-container');
         const errorContainer = modal.querySelector('#error-container');
+        const addedParticipantEl = modal.querySelector('#added-participant');
 
         // Call existing endpoint that handles adding participants
         const url = `/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/${encodeURIComponent(externalToken)}/participants?format=json`;
@@ -328,7 +390,7 @@
         formData.append('federatedId', federatedId);
 
         // Make request to add participant
-        fetch(url, {
+        return fetch(url, {
             method: 'POST',
             headers: {
                 'OCS-APIRequest': 'true',
@@ -362,13 +424,20 @@
             const hasError = data?.ocs?.data?.error;
             
             if (success) {
-                form.style.display = 'none';
                 resultContainer.style.display = 'block';
                 errorContainer.style.display = 'none';
-                modal.querySelector('#added-participant').textContent = federatedId;
 
-                // Close modal after 2 seconds
-                setTimeout(() => modal.remove(), 2000);
+                if (options.closeOnSuccess) {
+                    form.style.display = 'none';
+                    addedParticipantEl.textContent = federatedId;
+
+                    // Close modal after 2 seconds
+                    setTimeout(() => modal.remove(), 2000);
+                } else {
+                    // Append participant to list in-place
+                    const current = addedParticipantEl.textContent.trim();
+                    addedParticipantEl.textContent = current ? `${current}, ${federatedId}` : federatedId;
+                }
             } else if (hasError) {
                 throw new Error(data.ocs.data.error);
             } else {
@@ -800,10 +869,13 @@
             item.dataset.federatedId = user.federatedId;
             item.dataset.displayName = user.displayName;
             
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 selectedParticipants.add(user.federatedId);
                 addSelectedParticipant(user, selectedParticipants, selectedContainer);
-                resultsContainer.style.display = 'none';
+                // Hide this user from results
+                item.style.display = 'none';
             });
 
             resultsContainer.appendChild(item);
@@ -815,14 +887,23 @@
     function addSelectedParticipant(user, selectedParticipants, selectedContainer) {
         const chip = document.createElement('div');
         chip.className = 'participant-chip';
+        chip.style.cssText = 'display: inline-block; padding: 6px 10px; margin: 4px; background: #0082c9; color: white; border-radius: 4px; font-size: 13px;';
         chip.innerHTML = `
-            <span>${user.displayName}</span>
-            <button type="button" class="remove-participant">&times;</button>
+            <span title="${user.federatedId}" style="display: inline-block; margin-right: 6px;">${user.displayName}</span>
+            <button type="button" class="remove-participant" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px; padding: 0; margin: 0;">&times;</button>
         `;
         
-        chip.querySelector('.remove-participant').addEventListener('click', () => {
+        chip.querySelector('.remove-participant').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             selectedParticipants.delete(user.federatedId);
             chip.remove();
+            // Show removed user back in results if search is still visible
+            const resultsContainer = chip.closest('[id*="participant"]')?.parentElement?.querySelector('#participant-search-results');
+            if (resultsContainer && resultsContainer.style.display !== 'none') {
+                const userItems = resultsContainer.querySelectorAll(`[data-federated-id="${user.federatedId}"]`);
+                userItems.forEach(item => item.style.display = 'block');
+            }
         });
 
         selectedContainer.appendChild(chip);
