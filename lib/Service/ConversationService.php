@@ -431,23 +431,59 @@ class ConversationService {
             
             return $decoded ?? [];
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            $body = $e->getResponse()->getBody()->getContents();
+            $response = $e->getResponse();
+            $body = '';
+            $statusCode = 0;
+            
+            if ($response !== null) {
+                try {
+                    $body = $response->getBody()->getContents();
+                    $statusCode = $response->getStatusCode();
+                } catch (\Exception $ex) {
+                    $body = 'Could not read response body: ' . $ex->getMessage();
+                }
+            }
+            
             $this->logger->error('HTTP Client Error', [
                 'app' => 'create_external_conversation',
                 'url' => $url,
-                'status' => $e->getResponse()->getStatusCode(),
+                'status' => $statusCode,
                 'body' => substr($body, 0, 500),
+                'exception_message' => $e->getMessage(),
             ]);
-            throw new \Exception('HTTP ' . $e->getResponse()->getStatusCode() . ': ' . $e->getMessage());
+            throw new \Exception('HTTP ' . $statusCode . ': ' . $e->getMessage());
         } catch (\GuzzleHttp\Exception\ServerException $e) {
-            $body = $e->getResponse()->getBody()->getContents();
+            $response = $e->getResponse();
+            $body = '';
+            $statusCode = 0;
+            
+            if ($response !== null) {
+                try {
+                    $body = $response->getBody()->getContents();
+                    $statusCode = $response->getStatusCode();
+                } catch (\Exception $ex) {
+                    $body = 'Could not read response body: ' . $ex->getMessage();
+                }
+            }
+            
             $this->logger->error('HTTP Server Error', [
                 'app' => 'create_external_conversation',
                 'url' => $url,
-                'status' => $e->getResponse()->getStatusCode(),
+                'status' => $statusCode,
                 'body' => substr($body, 0, 500),
+                'exception_message' => $e->getMessage(),
             ]);
-            throw new \Exception('HTTP ' . $e->getResponse()->getStatusCode() . ': ' . $e->getMessage());
+            throw new \Exception('HTTP ' . $statusCode . ': ' . $e->getMessage());
+        } catch (\Exception $e) {
+            $this->logger->error('Request failed with exception', [
+                'app' => 'create_external_conversation',
+                'url' => $url,
+                'method' => $method,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }
     }
 
