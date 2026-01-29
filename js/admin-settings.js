@@ -286,7 +286,7 @@
             createBtn.disabled = true;
             createBtn.style.opacity = '0.6';
             createBtn.style.cursor = 'not-allowed';
-            showNotification('Creating conversation...', 'info', 0);
+            const creatingNotification = showNotification('Creating conversation...', 'info', 0);
             
             fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
                 method: 'POST',
@@ -314,6 +314,16 @@
             })
             .then(result => {
                 if (result.ocs && result.ocs.data && result.ocs.data.success) {
+                    // Remove the "Creating..." notification
+                    if (creatingNotification && creatingNotification.parentElement) {
+                        creatingNotification.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            if (creatingNotification.parentElement) {
+                                creatingNotification.remove();
+                            }
+                        }, 300);
+                    }
+                    
                     showNotification('Room created successfully!', 'success');
                     
                     // Show result with URL
@@ -338,6 +348,16 @@
             }
         })
         .catch(error => {
+            // Remove the "Creating..." notification
+            if (creatingNotification && creatingNotification.parentElement) {
+                creatingNotification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (creatingNotification.parentElement) {
+                        creatingNotification.remove();
+                    }
+                }, 300);
+            }
+            
             showNotification('Error: ' + error.message, 'error');
             const createBtn = document.getElementById('create-conversation');
             createBtn.disabled = false;
@@ -345,6 +365,11 @@
             createBtn.style.cursor = 'pointer';
             console.error('Failed to create conversation:', error);
         });
+        });
+        
+        // Add focus/blur styling to conversation name input
+        const convNameInput = document.getElementById('conv-name');
+        convNameInput.addEventListener('focus', () => {
             convNameInput.style.borderColor = '#0082c9';
             convNameInput.style.boxShadow = '0 0 0 3px rgba(0, 130, 201, 0.1)';
         });

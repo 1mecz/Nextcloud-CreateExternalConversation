@@ -503,7 +503,7 @@
             const resultContainer = modal.querySelector('#result-container');
 
             // Show notification instead of modal message
-            showNotification(`Adding ${federatedIds.length} participants...`, 'info', 0);
+            const addingNotification = showNotification(`Adding ${federatedIds.length} participants...`, 'info', 0);
 
             let chain = Promise.resolve();
             federatedIds.forEach((id) => {
@@ -512,6 +512,16 @@
 
             chain
                 .then(() => {
+                    // Remove the "Adding..." notification
+                    if (addingNotification && addingNotification.parentElement) {
+                        addingNotification.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            if (addingNotification.parentElement) {
+                                addingNotification.remove();
+                            }
+                        }, 300);
+                    }
+                    
                     infoContainer.style.display = 'none';
                     resultContainer.style.display = 'none';
                     showNotification(`Successfully added ${federatedIds.length} participants!`, 'success');
@@ -519,6 +529,16 @@
                     setTimeout(() => modal.remove(), 2000);
                 })
                 .catch((err) => {
+                    // Remove the "Adding..." notification
+                    if (addingNotification && addingNotification.parentElement) {
+                        addingNotification.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            if (addingNotification.parentElement) {
+                                addingNotification.remove();
+                            }
+                        }, 300);
+                    }
+                    
                     infoContainer.style.display = 'none';
                     errorContainer.style.display = 'none';
                     showNotification('Error: ' + err.message, 'error');
