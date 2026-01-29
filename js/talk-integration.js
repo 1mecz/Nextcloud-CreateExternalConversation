@@ -1188,6 +1188,9 @@
             return;
         }
 
+        // Show creating notification
+        const creatingNotification = showNotification('Creating conversation...', 'info', 0);
+
         // Make request to create conversation
         fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
             method: 'POST',
@@ -1204,6 +1207,16 @@
         .then(response => response.json())
         .then(data => {
             if (data.ocs.meta.statuscode === 200 && data.ocs.data.success) {
+                // Remove the "Creating..." notification
+                if (creatingNotification && creatingNotification.parentElement) {
+                    creatingNotification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => {
+                        if (creatingNotification.parentElement) {
+                            creatingNotification.remove();
+                        }
+                    }, 300);
+                }
+
                 errorContainer.style.display = 'none';
                 showNotification('Conversation created successfully!', 'success');
 
@@ -1232,6 +1245,16 @@
             }
         })
         .catch(error => {
+            // Remove the "Creating..." notification
+            if (creatingNotification && creatingNotification.parentElement) {
+                creatingNotification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (creatingNotification.parentElement) {
+                        creatingNotification.remove();
+                    }
+                }, 300);
+            }
+
             console.error('[CreateExternalConversation] Error:', error);
             errorContainer.style.display = 'block';
             modal.querySelector('#error-message').textContent = 'Error: ' + error.message;
