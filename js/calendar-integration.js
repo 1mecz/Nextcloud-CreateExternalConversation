@@ -104,7 +104,76 @@
         document.head.appendChild(style);
     }
 
-    addNotificationStyles();
+    // Add participants from calendar to conversation
+    async function addParticipantsToConversation(externalToken, eventName) {
+        console.log('[CreateExternalConversation] Looking for participants in calendar...');
+        
+        // Find all participant elements in the right panel
+        // Calendar typically shows attendees in a list or select
+        const rightPanel = document.querySelector('.app-full-body__right');
+        if (!rightPanel) {
+            console.log('[CreateExternalConversation] Right panel not found');
+            return;
+        }
+        
+        // Look for attendees/participants elements
+        const attendeeElements = rightPanel.querySelectorAll('[class*="attendee"], [class*="participant"], [class*="email"]');
+        console.log('[CreateExternalConversation] Found potential attendee elements:', attendeeElements.length);
+        
+        // Try to find email inputs or display fields
+        const inputs = rightPanel.querySelectorAll('input[type="email"], input[placeholder*="email"]');
+        console.log('[CreateExternalConversation] Found email inputs:', inputs.length);
+        
+        // Extract email addresses from visible text
+        const emails = new Set();
+        
+        // Search in all text content for email patterns
+        const textContent = rightPanel.innerText || '';
+        const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+        const matches = textContent.match(emailRegex);
+        
+        if (matches) {
+            matches.forEach(email => {
+                emails.add(email.toLowerCase());
+            });
+        }
+        
+        console.log('[CreateExternalConversation] Found emails:', Array.from(emails));
+        
+        if (emails.size === 0) {
+            console.log('[CreateExternalConversation] No participants found');
+            return;
+        }
+        
+        // Add each participant to the external conversation
+        for (const email of emails) {
+            try {
+                console.log('[CreateExternalConversation] Adding participant:', email);
+                
+                const response = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/' + externalToken + '/participants?format=json', {
+                    method: 'POST',
+                    headers: {
+                        'OCS-APIRequest': 'true',
+                        'requesttoken': OC.requestToken,
+                    },
+                    body: new URLSearchParams({
+                        federatedId: email,
+                    }),
+                });
+                
+                const data = await response.json();
+                if (data.ocs?.meta?.statuscode === 200) {
+                    console.log('[CreateExternalConversation] Added participant:', email);
+                } else {
+                    console.log('[CreateExternalConversation] Failed to add participant:', email);
+                }
+            } catch (error) {
+                console.error('[CreateExternalConversation] Error adding participant:', email, error);
+            }
+        }
+        
+        console.log('[CreateExternalConversation] Finished adding participants');
+    }
 
     // Add links to event description textarea
     function addLinksToEventDescription(externalLink, localLink) {
@@ -122,6 +191,12 @@
 
         // Get current content
         const currentContent = textarea.value || '';
+        
+        // Check if links are already in the textarea (prevent duplicates)
+        if (currentContent.includes(externalLink) || currentContent.includes(localLink)) {
+            console.log('[CreateExternalConversation] Links already in textarea, skipping');
+            return;
+        }
         
         // Add links
         const linksText = '\n\nTalk Links:\nExternal: ' + externalLink + '\nInternal: ' + localLink;
@@ -216,6 +291,9 @@
 
             // Try to add links to event description textarea
             addLinksToEventDescription(externalLink, localLink);
+
+            // Try to add event participants to the conversation
+            addParticipantsToConversation(externalToken, eventName);
 
             console.log('[CreateExternalConversation] Created conversations successfully:', {
                 external: externalLink,
