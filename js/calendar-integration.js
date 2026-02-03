@@ -397,16 +397,16 @@
             e.stopPropagation();
 
             try {
-                // Get event name from sidebar header
-                const eventNameEl = document.querySelector('.app-sidebar-header__mainname');
-                let eventName = eventNameEl?.textContent?.trim() || 'Conversation';
+                // Get event name from title input
+                const titleInput = document.querySelector('.property-title__input input');
+                let eventName = titleInput?.value?.trim() || '';
+                
+                // If empty, use default name
+                if (!eventName) {
+                    eventName = 'Nepojmenovaná událost';
+                }
                 
                 console.log('[CreateExternalConversation] Event name:', eventName);
-                
-                if (!eventName || eventName.length < 2) {
-                    showNotification('Could not determine event name. Please try again.', 'error');
-                    return;
-                }
 
                 button.disabled = true;
                 button.style.opacity = '0.6';
