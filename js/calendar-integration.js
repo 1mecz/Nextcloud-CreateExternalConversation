@@ -320,7 +320,7 @@
         }
 
         // Debug: If only search inputs found, show more detail
-        const hasOnlySearchInputs = allInputs.every(input => input.className.includes('vs__search'));
+        const hasOnlySearchInputs = Array.from(allInputs).every(input => input.className.includes('vs__search'));
         if (hasOnlySearchInputs) {
             console.log('[CreateExternalConversation] Only Vue Select inputs found, looking for actual event editor...');
             console.log('[CreateExternalConversation] Full right panel HTML:');
