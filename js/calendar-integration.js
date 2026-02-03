@@ -319,6 +319,20 @@
             return;
         }
 
+        // Debug: If only search inputs found, show more detail
+        const hasOnlySearchInputs = allInputs.every(input => input.className.includes('vs__search'));
+        if (hasOnlySearchInputs) {
+            console.log('[CreateExternalConversation] Only Vue Select inputs found, looking for actual event editor...');
+            console.log('[CreateExternalConversation] Full right panel HTML:');
+            console.log(rightPanel.outerHTML.substring(0, 3000));
+            
+            // Try to find event name elsewhere
+            const eventNameElement = rightPanel.querySelector('[class*="event-title"], [class*="summary"], h2, [data-testid*="title"]');
+            if (eventNameElement) {
+                console.log('[CreateExternalConversation] Found potential event name element:', eventNameElement.tagName, eventNameElement.className);
+            }
+        }
+
         // Find title input - try different selectors
         let titleInput = rightPanel.querySelector('input[placeholder*="title"], input[placeholder*="Title"], input[placeholder*="event"], input[type="text"]');
         
