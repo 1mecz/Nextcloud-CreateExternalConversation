@@ -6,10 +6,8 @@
     'use strict';
 
     console.log('[CreateExternalConversation] Calendar integration script loaded');
-    console.log('[CreateExternalConversation] Current page:', window.location.href);
-    console.log('[CreateExternalConversation] OC object:', window.OC ? 'available' : 'NOT available');
 
-    // Notification system (same as in talk-integration.js)
+    // Notification system
     function showNotification(message, type = 'info', duration = 3000) {
         const container = document.querySelector('.notification-container') || createNotificationContainer();
         
@@ -27,21 +25,19 @@
             word-wrap: break-word;
         `;
 
-        // Set colors based on type
         if (type === 'success') {
             notification.style.background = '#28a745';
             notification.style.color = 'white';
         } else if (type === 'error') {
             notification.style.background = '#e74c3c';
             notification.style.color = 'white';
-        } else { // info
+        } else {
             notification.style.background = '#0082c9';
             notification.style.color = 'white';
         }
 
         container.appendChild(notification);
 
-        // Auto remove after duration (unless duration is 0)
         if (duration > 0) {
             setTimeout(() => {
                 notification.style.animation = 'slideOut 0.3s ease';
@@ -49,7 +45,6 @@
                     if (notification.parentElement) {
                         notification.remove();
                     }
-                    // Remove container if empty
                     if (container.children.length === 0 && container.parentElement) {
                         container.remove();
                     }
@@ -111,13 +106,9 @@
 
     addNotificationStyles();
 
-    /**
-     * Create external conversation and add links to event description
-     */
+    // Create external conversation and add links to event description
     async function createConversationForEvent(eventName, descriptionTextarea) {
-        console.log('[CreateExternalConversation] createConversationForEvent called');
-        console.log('[CreateExternalConversation] Event name:', eventName);
-        console.log('[CreateExternalConversation] Description textarea:', descriptionTextarea);
+        console.log('[CreateExternalConversation] createConversationForEvent called with:', eventName);
         
         if (!eventName) {
             showNotification('Event name is required', 'error');
@@ -127,7 +118,7 @@
         const creatingNotification = showNotification('Creating conversation...', 'info', 0);
 
         try {
-            console.log('[CreateExternalConversation] Starting external conversation creation...');
+            console.log('[CreateExternalConversation] Creating external conversation...');
             
             // Step 1: Create external conversation
             const externalResponse = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
@@ -152,10 +143,9 @@
             }
 
             const externalLink = externalData.ocs.data.link;
-            const externalToken = externalData.ocs.data.token;
             console.log('[CreateExternalConversation] External link:', externalLink);
 
-            console.log('[CreateExternalConversation] Starting local conversation creation...');
+            console.log('[CreateExternalConversation] Creating local conversation...');
             
             // Step 2: Create local federated conversation
             const localResponse = await fetch('/ocs/v2.php/apps/spreed/api/v4/room?format=json', {
@@ -166,7 +156,7 @@
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    roomType: '2', // Group conversation
+                    roomType: '2',
                     roomName: eventName,
                 }),
             });
@@ -194,7 +184,7 @@
             }
 
             console.log('[CreateExternalConversation] Adding links to description...');
-
+            
             // Step 3: Add links to event description
             const currentDescription = descriptionTextarea.value || '';
             const newDescription = currentDescription + 
@@ -236,29 +226,21 @@
     }
 
     /**
-     * Add button to calendar event modal
+     * Add button to .app-full-body__right (Calendar event editor)
      */
     function addButtonToCalendarEvent() {
-        console.log('[CreateExternalConversation] Starting to watch for calendar modals...');
+        console.log('[CreateExternalConversation] Starting to watch for calendar event editor...');
         
-        // Wait for Calendar event modal to appear
-        const observer = new MutationObserver((mutations) => {
-            // Look for Calendar event editor modal
-            const eventModal = document.querySelector('.event-popover, .modal-wrapper, [class*="event-editor"], .modal-container, .app-sidebar');
+        const observer = new MutationObserver(() => {
+            const rightPanel = document.querySelector('.app-full-body__right');
             
-            if (!eventModal) return;
+            if (!rightPanel) return;
 
-            // Check if button already exists
-            if (eventModal.querySelector('.create-external-conversation-calendar-btn')) {
+            if (rightPanel.querySelector('.create-external-conversation-calendar-btn')) {
                 return;
             }
 
-            console.log('[CreateExternalConversation] Found modal element:', eventModal.className);
-
-            // Wait for Vue to render the content (Calendar uses async components)
-            setTimeout(() => {
-                tryAddButtonToModal(eventModal);
-            }, 500);
+            tryAddButtonToRightPanel(rightPanel);
         });
 
         observer.observe(document.body, {
@@ -267,118 +249,54 @@
         });
     }
 
-    function tryAddButtonToModal(eventModal) {
-        console.log('[CreateExternalConversation] Trying to add button to modal...');
+    function tryAddButtonToRightPanel(rightPanel) {
+        console.log('[CreateExternalConversation] Trying to add button to right panel...');
 
-        // Check if button already exists
-        if (eventModal.querySelector('.create-external-conversation-calendar-btn')) {
-            console.log('[CreateExternalConversation] Button already exists, skipping');
+        if (rightPanel.querySelector('.create-external-conversation-calendar-btn')) {
+            console.log('[CreateExternalConversation] Button already exists');
             return;
         }
 
-        // Check if this is a task sidebar (not a calendar event)
-        const isTaskSidebar = eventModal.querySelector('.app-sidebar-header__mainname')?.textContent?.includes('úkol');
-        if (isTaskSidebar) {
-            console.log('[CreateExternalConversation] This is a task sidebar, not a calendar event. Skipping.');
-            return;
-        }
-
-        // Debug: Show sidebar title
-        const sidebarTitle = eventModal.querySelector('.app-sidebar-header__mainname')?.textContent?.trim();
-        console.log('[CreateExternalConversation] Sidebar title:', sidebarTitle);
-
-        // Debug: List all inputs and textareas in modal
-        const allInputs = eventModal.querySelectorAll('input');
-        const allTextareas = eventModal.querySelectorAll('textarea');
-        console.log('[CreateExternalConversation] All inputs in modal:', allInputs.length);
-        allInputs.forEach((input, idx) => {
-            console.log(`  Input ${idx}:`, {
-                type: input.type,
-                name: input.name,
-                placeholder: input.placeholder,
-                className: input.className,
-                id: input.id,
-                value: input.value.substring(0, 30),
-            });
-        });
-        console.log('[CreateExternalConversation] All textareas in modal:', allTextareas.length);
-        allTextareas.forEach((textarea, idx) => {
-            console.log(`  Textarea ${idx}:`, {
-                name: textarea.name,
-                placeholder: textarea.placeholder,
-                className: textarea.className,
-                id: textarea.id,
-            });
-        });
-
-        // If still no inputs, let's see the HTML structure
-        if (allInputs.length === 0) {
-            console.log('[CreateExternalConversation] No inputs found yet. Checking if calendar event is being edited...');
-            
-            // Check if there's event content being loaded
-            const hasEventContent = eventModal.querySelector('[class*="event"], [class*="calendar"]');
-            if (!hasEventContent) {
-                console.log('[CreateExternalConversation] No event content detected. This might not be a calendar event.');
-                return;
-            }
-            
-            // Try again after more delay
-            setTimeout(() => {
-                console.log('[CreateExternalConversation] Retrying after additional delay...');
-                tryAddButtonToModal(eventModal);
-            }, 1000);
-            return;
-        }
-
-        // Find the event name/title input
-        const titleInput = eventModal.querySelector('input[type="text"][placeholder*="title"], input[type="text"][placeholder*="Title"], input.event-title, [class*="title"] input, input[name="title"]');
+        // Find title input
+        const titleInputs = rightPanel.querySelectorAll('input[type="text"]');
+        let titleInput = null;
         
-        console.log('[CreateExternalConversation] Title input found:', !!titleInput);
-        if (titleInput) {
-            console.log('[CreateExternalConversation] Title input:', titleInput);
+        // The first text input is usually the title
+        if (titleInputs.length > 0) {
+            titleInput = titleInputs[0];
+            console.log('[CreateExternalConversation] Found title input (first text input)');
         }
-        
+
         if (!titleInput) {
-            console.log('[CreateExternalConversation] Title input not found in modal');
+            console.log('[CreateExternalConversation] Title input not found yet, retrying...');
+            setTimeout(() => tryAddButtonToRightPanel(rightPanel), 500);
             return;
         }
 
-        // Find the description textarea
-        const descriptionTextarea = eventModal.querySelector('textarea[placeholder*="description"], textarea[placeholder*="Description"], textarea.event-description, [class*="description"] textarea, textarea[name="description"]');
-        
-        console.log('[CreateExternalConversation] Description textarea found:', !!descriptionTextarea);
-        if (descriptionTextarea) {
-            console.log('[CreateExternalConversation] Description textarea:', descriptionTextarea);
-        }
+        // Find description textarea
+        const descriptionTextarea = rightPanel.querySelector('textarea');
         
         if (!descriptionTextarea) {
-            console.log('[CreateExternalConversation] Description textarea not found in modal');
+            console.log('[CreateExternalConversation] Description textarea not found yet, retrying...');
+            setTimeout(() => tryAddButtonToRightPanel(rightPanel), 500);
             return;
         }
 
-        // Find the "Add Talk conversation" button or similar area
-        const talkButton = eventModal.querySelector('button[class*="talk"], button:has(.icon-talk), [class*="talk-button"]');
+        console.log('[CreateExternalConversation] Found both title input and description textarea');
+
+        // Find Talk button to locate where to insert our button
+        const allButtons = rightPanel.querySelectorAll('button');
         let insertionPoint = null;
+        
+        // Look for Talk button by text content or class
+        let talkButton = null;
+        allButtons.forEach(btn => {
+            if (btn.textContent.includes('Talk') || btn.title.includes('Talk')) {
+                talkButton = btn;
+            }
+        });
 
         console.log('[CreateExternalConversation] Talk button found:', !!talkButton);
-
-        if (talkButton) {
-            // Insert after Talk button
-            insertionPoint = talkButton.parentElement;
-        } else {
-            // Insert after description or in actions area
-            insertionPoint = descriptionTextarea.closest('.property, .form-group, [class*="description"]');
-            if (!insertionPoint) {
-                insertionPoint = eventModal.querySelector('.event-actions, .modal-buttons, [class*="actions"], .app-sidebar-tabs__content');
-            }
-        }
-
-        if (!insertionPoint) {
-            console.log('[CreateExternalConversation] Could not find insertion point, using modal as fallback');
-            insertionPoint = eventModal;
-        }
-
-        console.log('[CreateExternalConversation] Insertion point found:', insertionPoint.className);
 
         // Create button
         const button = document.createElement('button');
@@ -396,9 +314,6 @@
             cursor: pointer;
             font-weight: 500;
             font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         `;
 
         button.addEventListener('click', async (e) => {
@@ -417,25 +332,29 @@
             button.disabled = true;
             button.style.opacity = '0.6';
             button.style.cursor = 'not-allowed';
+            button.style.pointerEvents = 'none';
 
             await createConversationForEvent(eventName, descriptionTextarea);
 
             button.disabled = false;
             button.style.opacity = '1';
             button.style.cursor = 'pointer';
+            button.style.pointerEvents = 'auto';
         });
 
-        // Insert button
-        if (talkButton) {
-            insertionPoint.insertBefore(button, talkButton.nextSibling);
+        // Insert button next to Talk button or append to right panel
+        if (talkButton && talkButton.parentElement) {
+            talkButton.parentElement.insertBefore(button, talkButton.nextSibling);
+            console.log('[CreateExternalConversation] Button inserted after Talk button');
         } else {
-            insertionPoint.appendChild(button);
+            rightPanel.appendChild(button);
+            console.log('[CreateExternalConversation] Button appended to right panel');
         }
 
-        console.log('[CreateExternalConversation] Button added to calendar event successfully!');
+        console.log('[CreateExternalConversation] Button added successfully!');
     }
 
-    // Initialize
+    // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', addButtonToCalendarEvent);
     } else {
