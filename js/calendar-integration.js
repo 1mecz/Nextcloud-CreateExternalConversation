@@ -106,9 +106,9 @@
 
     addNotificationStyles();
 
-    // Create external conversation and add links to event description
-    async function createConversationForEvent(eventName, descriptionTextarea) {
-        console.log('[CreateExternalConversation] createConversationForEvent called with:', eventName);
+    // Create external conversation
+    async function createConversationForEvent(eventName) {
+        console.log('[CreateExternalConversation] Creating conversation for event:', eventName);
         
         if (!eventName) {
             showNotification('Event name is required', 'error');
@@ -118,8 +118,6 @@
         const creatingNotification = showNotification('Creating conversation...', 'info', 0);
 
         try {
-            console.log('[CreateExternalConversation] Creating external conversation...');
-            
             // Step 1: Create external conversation
             const externalResponse = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
                 method: 'POST',
@@ -134,19 +132,14 @@
                 }),
             });
 
-            console.log('[CreateExternalConversation] External response status:', externalResponse.status);
             const externalData = await externalResponse.json();
-            console.log('[CreateExternalConversation] External data:', externalData);
 
             if (!externalData.ocs?.data?.success) {
                 throw new Error(externalData.ocs?.data?.error || 'Failed to create external conversation');
             }
 
             const externalLink = externalData.ocs.data.link;
-            console.log('[CreateExternalConversation] External link:', externalLink);
 
-            console.log('[CreateExternalConversation] Creating local conversation...');
-            
             // Step 2: Create local federated conversation
             const localResponse = await fetch('/ocs/v2.php/apps/spreed/api/v4/room?format=json', {
                 method: 'POST',
@@ -161,9 +154,7 @@
                 }),
             });
 
-            console.log('[CreateExternalConversation] Local response status:', localResponse.status);
             const localData = await localResponse.json();
-            console.log('[CreateExternalConversation] Local data:', localData);
 
             if (!localData.ocs?.data?.token) {
                 throw new Error('Failed to create local conversation');
@@ -171,7 +162,6 @@
 
             const localToken = localData.ocs.data.token;
             const localLink = window.location.origin + '/call/' + localToken;
-            console.log('[CreateExternalConversation] Local link:', localLink);
 
             // Remove creating notification
             if (creatingNotification && creatingNotification.parentElement) {
@@ -183,40 +173,14 @@
                 }, 300);
             }
 
-            console.log('[CreateExternalConversation] Adding links to description...');
+            // Show success with links
+            showNotification('✓ Conversations created! Copy links from notification below.', 'success', 5000);
             
-            // Step 3: Add links to event description
-            let currentDescription = '';
+            // Show external link
+            showNotification('External: ' + externalLink, 'info', 8000);
             
-            // Handle both textarea and contenteditable elements
-            if (descriptionTextarea.tagName === 'TEXTAREA') {
-                currentDescription = descriptionTextarea.value || '';
-            } else if (descriptionTextarea.contentEditable === 'true') {
-                currentDescription = descriptionTextarea.textContent || '';
-            } else {
-                currentDescription = descriptionTextarea.value || descriptionTextarea.textContent || '';
-            }
-            
-            const newDescription = currentDescription + 
-                (currentDescription ? '\n\n' : '') +
-                'Talk Links:\n' +
-                'External: ' + externalLink + '\n' +
-                'Internal: ' + localLink;
-
-            // Set content based on element type
-            if (descriptionTextarea.tagName === 'TEXTAREA') {
-                descriptionTextarea.value = newDescription;
-                descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            } else if (descriptionTextarea.contentEditable === 'true') {
-                descriptionTextarea.textContent = newDescription;
-                descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            } else {
-                descriptionTextarea.value = newDescription;
-            }
-            
-            descriptionTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-
-            showNotification('Conversation created and links added!', 'success');
+            // Show internal link
+            showNotification('Internal: ' + localLink, 'info', 8000);
 
             console.log('[CreateExternalConversation] Created conversations successfully:', {
                 external: externalLink,
@@ -224,9 +188,8 @@
             });
 
         } catch (error) {
-            console.error('[CreateExternalConversation] Error in createConversationForEvent:', error);
+            console.error('[CreateExternalConversation] Error:', error);
             
-            // Remove creating notification
             if (creatingNotification && creatingNotification.parentElement) {
                 creatingNotification.style.animation = 'slideOut 0.3s ease';
                 setTimeout(() => {
@@ -241,7 +204,7 @@
     }
 
     /**
-     * Add button to .app-full-body__right (Calendar event editor)
+     * Add button to .app-full-body__right next to Talk button
      */
     function addButtonToCalendarEvent() {
         console.log('[CreateExternalConversation] Starting to watch for calendar event editor...');
@@ -272,185 +235,67 @@
             return;
         }
 
-        // Debug: Show all inputs in the panel
-        const allInputs = rightPanel.querySelectorAll('input');
-        console.log('[CreateExternalConversation] All inputs found:', allInputs.length);
-        allInputs.forEach((input, idx) => {
-            console.log(`  Input ${idx}:`, {
-                type: input.type,
-                placeholder: input.placeholder,
-                className: input.className,
-                name: input.name,
-                id: input.id,
-                value: input.value ? input.value.substring(0, 30) : '',
-            });
-        });
-
-        // Debug: Show all textareas
-        const allTextareas = rightPanel.querySelectorAll('textarea');
-        console.log('[CreateExternalConversation] All textareas found:', allTextareas.length);
-        allTextareas.forEach((textarea, idx) => {
-            console.log(`  Textarea ${idx}:`, {
-                placeholder: textarea.placeholder,
-                className: textarea.className,
-                name: textarea.name,
-                id: textarea.id,
-            });
-        });
-
-        // Debug: Show buttons
-        const allButtons = rightPanel.querySelectorAll('button');
-        console.log('[CreateExternalConversation] All buttons found:', allButtons.length);
-        allButtons.forEach((btn, idx) => {
-            console.log(`  Button ${idx}:`, {
-                text: btn.textContent.substring(0, 50),
-                className: btn.className,
-                title: btn.title,
-                id: btn.id,
-            });
-        });
-
-        // If no inputs found, show HTML snippet
-        if (allInputs.length === 0) {
-            console.log('[CreateExternalConversation] No inputs found. Panel HTML (first 2000 chars):');
-            console.log(rightPanel.innerHTML.substring(0, 2000));
-            console.log('[CreateExternalConversation] Retrying in 1 second...');
-            setTimeout(() => tryAddButtonToRightPanel(rightPanel), 1000);
-            return;
-        }
-
-        // Debug: If only search inputs found, show more detail
-        const hasOnlySearchInputs = Array.from(allInputs).every(input => input.className.includes('vs__search'));
-        if (hasOnlySearchInputs) {
-            console.log('[CreateExternalConversation] Only Vue Select inputs found, looking for actual event editor...');
-            console.log('[CreateExternalConversation] Full right panel HTML:');
-            console.log(rightPanel.outerHTML.substring(0, 3000));
-            
-            // Try to find event name elsewhere
-            const eventNameElement = rightPanel.querySelector('[class*="event-title"], [class*="summary"], h2, [data-testid*="title"]');
-            if (eventNameElement) {
-                console.log('[CreateExternalConversation] Found potential event name element:', eventNameElement.tagName, eventNameElement.className);
-            }
-        }
-
-        // Find title input - try different selectors
-        let titleInput = rightPanel.querySelector('input[placeholder*="title"], input[placeholder*="Title"], input[placeholder*="event"], input[type="text"]');
+        // Find "Přidat konverzaci v Talk" button
+        const talkButton = rightPanel.querySelector('.property-add-talk__button');
         
-        if (!titleInput && allInputs.length > 0) {
-            titleInput = allInputs[0];
-            console.log('[CreateExternalConversation] Using first input as title input');
-        }
-
-        console.log('[CreateExternalConversation] Title input found:', !!titleInput);
-
-        if (!titleInput) {
-            console.log('[CreateExternalConversation] Title input not found yet, retrying...');
+        if (!talkButton) {
+            console.log('[CreateExternalConversation] Talk button not found yet, retrying...');
             setTimeout(() => tryAddButtonToRightPanel(rightPanel), 500);
             return;
         }
 
-        // Find description textarea
-        let descriptionTextarea = rightPanel.querySelector('textarea');
-        
-        console.log('[CreateExternalConversation] Description textarea found:', !!descriptionTextarea);
+        console.log('[CreateExternalConversation] Found Talk button, creating our button...');
 
-        if (!descriptionTextarea) {
-            // Try to find contenteditable elements or other description containers
-            console.log('[CreateExternalConversation] Looking for alternative description elements...');
-            
-            const contentEditables = rightPanel.querySelectorAll('[contenteditable="true"]');
-            console.log('[CreateExternalConversation] Contenteditable elements found:', contentEditables.length);
-            contentEditables.forEach((el, idx) => {
-                console.log(`  Contenteditable ${idx}:`, {
-                    className: el.className,
-                    id: el.id,
-                    textContent: el.textContent.substring(0, 50),
-                });
-            });
-
-            const divs = rightPanel.querySelectorAll('[class*="description"], [class*="note"], [class*="memo"]');
-            console.log('[CreateExternalConversation] Description-like divs found:', divs.length);
-            
-            if (contentEditables.length > 0) {
-                descriptionTextarea = contentEditables[0];
-                console.log('[CreateExternalConversation] Using first contenteditable as description');
-            }
-        }
-
-        console.log('[CreateExternalConversation] Description container found:', !!descriptionTextarea);
-
-        if (!descriptionTextarea) {
-            console.log('[CreateExternalConversation] Description container not found yet, retrying...');
-            setTimeout(() => tryAddButtonToRightPanel(rightPanel), 500);
-            return;
-        }
-
-        console.log('[CreateExternalConversation] Found both title input and description textarea');
-
-        // Find Talk button to locate where to insert our button
-        let talkButton = null;
-        allButtons.forEach(btn => {
-            if (btn.textContent.includes('Talk') || btn.title.includes('Talk')) {
-                talkButton = btn;
-            }
-        });
-
-        console.log('[CreateExternalConversation] Talk button found:', !!talkButton);
-
-        // Create button
+        // Create button with same styling as Talk button
         const button = document.createElement('button');
-        button.className = 'create-external-conversation-calendar-btn';
+        button.className = 'create-external-conversation-calendar-btn property-add-talk__button button-vue button-vue--size-normal button-vue--text-only button-vue--vue-secondary';
         button.type = 'button';
         button.title = 'Create external conversation and add links to event';
-        button.textContent = '🌐 Create External Conversation';
-        button.style.cssText = `
-            margin: 8px 0;
-            padding: 10px 15px;
-            background-color: #0082c9;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 14px;
-        `;
+        button.style.width = '100%';
+        button.style.marginTop = '8px';
+        
+        button.innerHTML = `<span class="button-vue__wrapper"><span class="button-vue__text">
+            🌐 Create External Conversation
+        </span></span>`;
 
         button.addEventListener('click', async (e) => {
             console.log('[CreateExternalConversation] Button clicked!');
             e.preventDefault();
             e.stopPropagation();
 
-            const eventName = titleInput.value.trim();
-            console.log('[CreateExternalConversation] Event name:', eventName);
-            
-            if (!eventName) {
-                showNotification('Please enter an event title first', 'error');
-                return;
+            try {
+                // Get event name from sidebar header
+                const eventNameEl = document.querySelector('.app-sidebar-header__mainname');
+                let eventName = eventNameEl?.textContent?.trim() || 'Conversation';
+                
+                console.log('[CreateExternalConversation] Event name:', eventName);
+                
+                if (!eventName || eventName.length < 2) {
+                    showNotification('Could not determine event name. Please try again.', 'error');
+                    return;
+                }
+
+                button.disabled = true;
+                button.style.opacity = '0.6';
+                button.style.pointerEvents = 'none';
+
+                await createConversationForEvent(eventName);
+
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.pointerEvents = 'auto';
+            } catch (error) {
+                console.error('[CreateExternalConversation] Error:', error);
+                showNotification('Error: ' + error.message, 'error');
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.pointerEvents = 'auto';
             }
-
-            button.disabled = true;
-            button.style.opacity = '0.6';
-            button.style.cursor = 'not-allowed';
-            button.style.pointerEvents = 'none';
-
-            await createConversationForEvent(eventName, descriptionTextarea);
-
-            button.disabled = false;
-            button.style.opacity = '1';
-            button.style.cursor = 'pointer';
-            button.style.pointerEvents = 'auto';
         });
 
-        // Insert button next to Talk button or append to right panel
-        if (talkButton && talkButton.parentElement) {
-            talkButton.parentElement.insertBefore(button, talkButton.nextSibling);
-            console.log('[CreateExternalConversation] Button inserted after Talk button');
-        } else {
-            rightPanel.appendChild(button);
-            console.log('[CreateExternalConversation] Button appended to right panel');
-        }
-
-        console.log('[CreateExternalConversation] Button added successfully!');
+        // Insert button after Talk button (in same parent container)
+        talkButton.parentElement.insertBefore(button, talkButton.nextSibling);
+        console.log('[CreateExternalConversation] Button inserted next to Talk button!');
     }
 
     // Initialize when DOM is ready
