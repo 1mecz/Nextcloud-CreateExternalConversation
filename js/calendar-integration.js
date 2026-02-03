@@ -186,19 +186,34 @@
             console.log('[CreateExternalConversation] Adding links to description...');
             
             // Step 3: Add links to event description
-            const currentDescription = descriptionTextarea.value || '';
+            let currentDescription = '';
+            
+            // Handle both textarea and contenteditable elements
+            if (descriptionTextarea.tagName === 'TEXTAREA') {
+                currentDescription = descriptionTextarea.value || '';
+            } else if (descriptionTextarea.contentEditable === 'true') {
+                currentDescription = descriptionTextarea.textContent || '';
+            } else {
+                currentDescription = descriptionTextarea.value || descriptionTextarea.textContent || '';
+            }
+            
             const newDescription = currentDescription + 
                 (currentDescription ? '\n\n' : '') +
                 'Talk Links:\n' +
                 'External: ' + externalLink + '\n' +
                 'Internal: ' + localLink;
 
-            descriptionTextarea.value = newDescription;
+            // Set content based on element type
+            if (descriptionTextarea.tagName === 'TEXTAREA') {
+                descriptionTextarea.value = newDescription;
+                descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            } else if (descriptionTextarea.contentEditable === 'true') {
+                descriptionTextarea.textContent = newDescription;
+                descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            } else {
+                descriptionTextarea.value = newDescription;
+            }
             
-            console.log('[CreateExternalConversation] New description set:', newDescription);
-            
-            // Trigger input event to notify Calendar app
-            descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             descriptionTextarea.dispatchEvent(new Event('change', { bubbles: true }));
 
             showNotification('Conversation created and links added!', 'success');
@@ -326,7 +341,32 @@
         console.log('[CreateExternalConversation] Description textarea found:', !!descriptionTextarea);
 
         if (!descriptionTextarea) {
-            console.log('[CreateExternalConversation] Description textarea not found yet, retrying...');
+            // Try to find contenteditable elements or other description containers
+            console.log('[CreateExternalConversation] Looking for alternative description elements...');
+            
+            const contentEditables = rightPanel.querySelectorAll('[contenteditable="true"]');
+            console.log('[CreateExternalConversation] Contenteditable elements found:', contentEditables.length);
+            contentEditables.forEach((el, idx) => {
+                console.log(`  Contenteditable ${idx}:`, {
+                    className: el.className,
+                    id: el.id,
+                    textContent: el.textContent.substring(0, 50),
+                });
+            });
+
+            const divs = rightPanel.querySelectorAll('[class*="description"], [class*="note"], [class*="memo"]');
+            console.log('[CreateExternalConversation] Description-like divs found:', divs.length);
+            
+            if (contentEditables.length > 0) {
+                descriptionTextarea = contentEditables[0];
+                console.log('[CreateExternalConversation] Using first contenteditable as description');
+            }
+        }
+
+        console.log('[CreateExternalConversation] Description container found:', !!descriptionTextarea);
+
+        if (!descriptionTextarea) {
+            console.log('[CreateExternalConversation] Description container not found yet, retrying...');
             setTimeout(() => tryAddButtonToRightPanel(rightPanel), 500);
             return;
         }
