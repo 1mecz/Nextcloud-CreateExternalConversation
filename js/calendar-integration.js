@@ -108,44 +108,59 @@
     async function addParticipantsToConversation(externalToken, eventName) {
         console.log('[CreateExternalConversation] Looking for participants in calendar...');
         
-        // Find all participant elements in the right panel
-        // Calendar typically shows attendees in a list or select
+        // Find right panel
         const rightPanel = document.querySelector('.app-full-body__right');
         if (!rightPanel) {
             console.log('[CreateExternalConversation] Right panel not found');
             return;
         }
         
-        // Look for attendees/participants elements
-        const attendeeElements = rightPanel.querySelectorAll('[class*="attendee"], [class*="participant"], [class*="email"]');
-        console.log('[CreateExternalConversation] Found potential attendee elements:', attendeeElements.length);
-        
-        // Try to find email inputs or display fields
-        const inputs = rightPanel.querySelectorAll('input[type="email"], input[placeholder*="email"]');
-        console.log('[CreateExternalConversation] Found email inputs:', inputs.length);
-        
-        // Extract email addresses from visible text
+        // Try to find email addresses from all possible sources
         const emails = new Set();
         
-        // Search in all text content for email patterns
-        const textContent = rightPanel.innerText || '';
+        // 1. Try to find email inputs/fields
+        const emailInputs = rightPanel.querySelectorAll('input[type="email"], input[type="text"][placeholder*="email"], input[placeholder*="Email"], input[placeholder*="Participant"]');
+        console.log('[CreateExternalConversation] Found email inputs:', emailInputs.length);
+        emailInputs.forEach(input => {
+            if (input.value && input.value.includes('@')) {
+                emails.add(input.value.trim().toLowerCase());
+            }
+        });
+        
+        // 2. Try to find attendee/participant list items
+        const attendeeElements = rightPanel.querySelectorAll('[class*="attendee"], [class*="participant"], [class*="member"]');
+        console.log('[CreateExternalConversation] Found attendee elements:', attendeeElements.length);
+        attendeeElements.forEach(el => {
+            const text = el.textContent || el.innerText || '';
+            const match = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
+            if (match) {
+                emails.add(match[1].toLowerCase());
+            }
+        });
+        
+        // 3. Search in all text content for email patterns
+        const textContent = rightPanel.innerText || rightPanel.textContent || '';
         const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
         const matches = textContent.match(emailRegex);
-        
         if (matches) {
             matches.forEach(email => {
                 emails.add(email.toLowerCase());
             });
         }
         
+        // Log all found elements for debugging
+        console.log('[CreateExternalConversation] Right panel HTML sample:', rightPanel.innerHTML.substring(0, 500));
+        
         console.log('[CreateExternalConversation] Found emails:', Array.from(emails));
         
         if (emails.size === 0) {
             console.log('[CreateExternalConversation] No participants found');
+            showNotification('No participants found in event', 'info');
             return;
         }
         
         // Add each participant to the external conversation
+        let addedCount = 0;
         for (const email of emails) {
             try {
                 console.log('[CreateExternalConversation] Adding participant:', email);
@@ -164,15 +179,20 @@
                 const data = await response.json();
                 if (data.ocs?.meta?.statuscode === 200) {
                     console.log('[CreateExternalConversation] Added participant:', email);
+                    addedCount++;
                 } else {
-                    console.log('[CreateExternalConversation] Failed to add participant:', email);
+                    console.log('[CreateExternalConversation] Failed to add participant:', email, data);
                 }
             } catch (error) {
                 console.error('[CreateExternalConversation] Error adding participant:', email, error);
             }
         }
         
-        console.log('[CreateExternalConversation] Finished adding participants');
+        if (addedCount > 0) {
+            showNotification('✓ Added ' + addedCount + ' participant(s)', 'success');
+        }
+        
+        console.log('[CreateExternalConversation] Finished adding participants:', addedCount);
     }
 
     // Add links to event description textarea
