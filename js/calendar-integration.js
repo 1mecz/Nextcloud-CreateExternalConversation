@@ -276,6 +276,17 @@
             return;
         }
 
+        // Check if this is a task sidebar (not a calendar event)
+        const isTaskSidebar = eventModal.querySelector('.app-sidebar-header__mainname')?.textContent?.includes('úkol');
+        if (isTaskSidebar) {
+            console.log('[CreateExternalConversation] This is a task sidebar, not a calendar event. Skipping.');
+            return;
+        }
+
+        // Debug: Show sidebar title
+        const sidebarTitle = eventModal.querySelector('.app-sidebar-header__mainname')?.textContent?.trim();
+        console.log('[CreateExternalConversation] Sidebar title:', sidebarTitle);
+
         // Debug: List all inputs and textareas in modal
         const allInputs = eventModal.querySelectorAll('input');
         const allTextareas = eventModal.querySelectorAll('textarea');
@@ -302,8 +313,14 @@
 
         // If still no inputs, let's see the HTML structure
         if (allInputs.length === 0) {
-            console.log('[CreateExternalConversation] No inputs found. Sidebar HTML (first 1000 chars):');
-            console.log(eventModal.innerHTML.substring(0, 1000));
+            console.log('[CreateExternalConversation] No inputs found yet. Checking if calendar event is being edited...');
+            
+            // Check if there's event content being loaded
+            const hasEventContent = eventModal.querySelector('[class*="event"], [class*="calendar"]');
+            if (!hasEventContent) {
+                console.log('[CreateExternalConversation] No event content detected. This might not be a calendar event.');
+                return;
+            }
             
             // Try again after more delay
             setTimeout(() => {
