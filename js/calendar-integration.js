@@ -276,6 +276,7 @@
             let internalLink = null;
             try {
                 const currentUser = OC.getCurrentUser();
+                console.log('[CreateExternalConversation] Current user:', currentUser);
                 if (currentUser && currentUser.uid) {
                     const userResponse = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/' + externalToken + '/participants?format=json', {
                         method: 'POST',
@@ -289,12 +290,15 @@
                     });
                     
                     const userData = await userResponse.json();
+                    console.log('[CreateExternalConversation] Add user response:', userData);
                     if (userData.ocs?.meta?.statuscode === 200) {
                         console.log('[CreateExternalConversation] Current user added successfully');
                         // Get internal link from response
                         if (userData.ocs?.data?.internalToken) {
                             internalLink = window.location.origin + '/call/' + userData.ocs.data.internalToken;
                             console.log('[CreateExternalConversation] Internal link:', internalLink);
+                        } else {
+                            console.log('[CreateExternalConversation] No internalToken in response, full data:', userData.ocs?.data);
                         }
                     }
                 }
