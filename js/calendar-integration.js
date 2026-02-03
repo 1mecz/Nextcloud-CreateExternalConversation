@@ -106,6 +106,38 @@
 
     addNotificationStyles();
 
+    // Add links to event description textarea
+    function addLinksToEventDescription(externalLink, localLink) {
+        console.log('[CreateExternalConversation] Looking for description textarea...');
+        
+        // Find the textarea in property-text__input
+        const textarea = document.querySelector('.property-text__input textarea');
+        
+        if (!textarea) {
+            console.log('[CreateExternalConversation] Description textarea not found');
+            return;
+        }
+
+        console.log('[CreateExternalConversation] Found description textarea');
+
+        // Get current content
+        const currentContent = textarea.value || '';
+        
+        // Add links
+        const linksText = '\n\nTalk Links:\nExternal: ' + externalLink + '\nInternal: ' + localLink;
+        const newContent = currentContent + linksText;
+        
+        // Set content
+        textarea.value = newContent;
+        
+        // Trigger change events so Calendar detects the change
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        console.log('[CreateExternalConversation] Links added to description textarea');
+        showNotification('Links added to event description!', 'success', 3000);
+    }
+
     // Create external conversation
     async function createConversationForEvent(eventName) {
         console.log('[CreateExternalConversation] Creating conversation for event:', eventName);
@@ -174,13 +206,16 @@
             }
 
             // Show success with links
-            showNotification('✓ Conversations created! Copy links from notification below.', 'success', 5000);
+            showNotification('✓ Conversations created!', 'success', 5000);
             
             // Show external link
             showNotification('External: ' + externalLink, 'info', 8000);
             
             // Show internal link
             showNotification('Internal: ' + localLink, 'info', 8000);
+
+            // Try to add links to event description textarea
+            addLinksToEventDescription(externalLink, localLink);
 
             console.log('[CreateExternalConversation] Created conversations successfully:', {
                 external: externalLink,
