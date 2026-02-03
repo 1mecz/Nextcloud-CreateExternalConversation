@@ -271,42 +271,6 @@
             const externalLink = externalData.ocs.data.link;
             const externalToken = externalData.ocs.data.token;
 
-            // Add current user to the conversation automatically
-            console.log('[CreateExternalConversation] Adding current user to conversation...');
-            let internalLink = null;
-            try {
-                const currentUser = OC.getCurrentUser();
-                console.log('[CreateExternalConversation] Current user:', currentUser);
-                if (currentUser && currentUser.uid) {
-                    const userResponse = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/' + externalToken + '/participants?format=json', {
-                        method: 'POST',
-                        headers: {
-                            'OCS-APIRequest': 'true',
-                            'requesttoken': OC.requestToken,
-                        },
-                        body: new URLSearchParams({
-                            federatedId: currentUser.uid,
-                        }),
-                    });
-                    
-                    const userData = await userResponse.json();
-                    console.log('[CreateExternalConversation] Add user response:', userData);
-                    if (userData.ocs?.meta?.statuscode === 200) {
-                        console.log('[CreateExternalConversation] Current user added successfully');
-                        // Get internal link from response
-                        if (userData.ocs?.data?.internalToken) {
-                            internalLink = window.location.origin + '/call/' + userData.ocs.data.internalToken;
-                            console.log('[CreateExternalConversation] Internal link:', internalLink);
-                        } else {
-                            console.log('[CreateExternalConversation] No internalToken in response, full data:', userData.ocs?.data);
-                        }
-                    }
-                }
-            } catch (userError) {
-                console.error('[CreateExternalConversation] Error adding current user:', userError);
-                // Continue even if adding current user fails
-            }
-
             // Remove creating notification
             if (creatingNotification && creatingNotification.parentElement) {
                 creatingNotification.style.animation = 'slideOut 0.3s ease';
@@ -322,21 +286,15 @@
             
             // Show external link
             showNotification('External: ' + externalLink, 'info', 8000);
-            
-            // Show internal link if available
-            if (internalLink) {
-                showNotification('Internal: ' + internalLink, 'info', 8000);
-            }
 
-            // Try to add links to event description textarea
-            addLinksToEventDescription(externalLink, internalLink);
+            // Try to add link to event description textarea
+            addLinksToEventDescription(externalLink, null);
 
             // Try to add event participants to the conversation
             addParticipantsToConversation(externalToken, eventName);
 
             console.log('[CreateExternalConversation] Created conversation successfully:', {
                 external: externalLink,
-                internal: internalLink,
             });
 
         } catch (error) {
