@@ -195,8 +195,8 @@
         console.log('[CreateExternalConversation] Finished adding participants:', addedCount);
     }
 
-    // Add links to event description textarea
-    function addLinksToEventDescription(externalLink, localLink) {
+    // Add link to event description textarea
+    function addLinksToEventDescription(externalLink) {
         console.log('[CreateExternalConversation] Looking for description textarea...');
         
         // Find the textarea in property-text__input
@@ -212,15 +212,15 @@
         // Get current content
         const currentContent = textarea.value || '';
         
-        // Check if links are already in the textarea (prevent duplicates)
-        if (currentContent.includes(externalLink) || currentContent.includes(localLink)) {
-            console.log('[CreateExternalConversation] Links already in textarea, skipping');
+        // Check if link is already in the textarea (prevent duplicates)
+        if (currentContent.includes(externalLink)) {
+            console.log('[CreateExternalConversation] Link already in textarea, skipping');
             return;
         }
         
-        // Add links
-        const linksText = '\n\nTalk Links:\nExternal: ' + externalLink + '\nInternal: ' + localLink;
-        const newContent = currentContent + linksText;
+        // Add link
+        const linkText = '\n\nTalk Link:\n' + externalLink;
+        const newContent = currentContent + linkText;
         
         // Set content
         textarea.value = newContent;
@@ -229,8 +229,8 @@
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
         textarea.dispatchEvent(new Event('change', { bubbles: true }));
         
-        console.log('[CreateExternalConversation] Links added to description textarea');
-        showNotification('Links added to event description!', 'success', 3000);
+        console.log('[CreateExternalConversation] Link added to description textarea');
+        showNotification('Link added to event description!', 'success', 3000);
     }
 
     // Create external conversation
@@ -266,29 +266,7 @@
             }
 
             const externalLink = externalData.ocs.data.link;
-
-            // Step 2: Create local federated conversation
-            const localResponse = await fetch('/ocs/v2.php/apps/spreed/api/v4/room?format=json', {
-                method: 'POST',
-                headers: {
-                    'OCS-APIRequest': 'true',
-                    'requesttoken': OC.requestToken,
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    roomType: '2',
-                    roomName: eventName,
-                }),
-            });
-
-            const localData = await localResponse.json();
-
-            if (!localData.ocs?.data?.token) {
-                throw new Error('Failed to create local conversation');
-            }
-
-            const localToken = localData.ocs.data.token;
-            const localLink = window.location.origin + '/call/' + localToken;
+            const externalToken = externalData.ocs.data.token;
 
             // Remove creating notification
             if (creatingNotification && creatingNotification.parentElement) {
@@ -300,24 +278,20 @@
                 }, 300);
             }
 
-            // Show success with links
-            showNotification('✓ Conversations created!', 'success', 5000);
+            // Show success with link
+            showNotification('✓ Conversation created!', 'success', 5000);
             
             // Show external link
             showNotification('External: ' + externalLink, 'info', 8000);
-            
-            // Show internal link
-            showNotification('Internal: ' + localLink, 'info', 8000);
 
-            // Try to add links to event description textarea
-            addLinksToEventDescription(externalLink, localLink);
+            // Try to add link to event description textarea
+            addLinksToEventDescription(externalLink);
 
             // Try to add event participants to the conversation
             addParticipantsToConversation(externalToken, eventName);
 
-            console.log('[CreateExternalConversation] Created conversations successfully:', {
+            console.log('[CreateExternalConversation] Created conversation successfully:', {
                 external: externalLink,
-                internal: localLink,
             });
 
         } catch (error) {
