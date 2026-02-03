@@ -257,6 +257,29 @@
 
             console.log('[CreateExternalConversation] Button not found, trying to add...');
 
+            // Debug: List all inputs and textareas in modal
+            const allInputs = eventModal.querySelectorAll('input');
+            const allTextareas = eventModal.querySelectorAll('textarea');
+            console.log('[CreateExternalConversation] All inputs in modal:', allInputs.length);
+            allInputs.forEach((input, idx) => {
+                console.log(`  Input ${idx}:`, {
+                    type: input.type,
+                    name: input.name,
+                    placeholder: input.placeholder,
+                    className: input.className,
+                    id: input.id,
+                });
+            });
+            console.log('[CreateExternalConversation] All textareas in modal:', allTextareas.length);
+            allTextareas.forEach((textarea, idx) => {
+                console.log(`  Textarea ${idx}:`, {
+                    name: textarea.name,
+                    placeholder: textarea.placeholder,
+                    className: textarea.className,
+                    id: textarea.id,
+                });
+            });
+
             // Find the event name/title input
             const titleInput = eventModal.querySelector('input[type="text"][placeholder*="title"], input[type="text"][placeholder*="Title"], input.event-title, [class*="title"] input, input[name="title"]');
             
