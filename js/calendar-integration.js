@@ -334,7 +334,6 @@
                 external: externalLink,
                 internal: internalLink,
             });
-            });
 
         } catch (error) {
             console.error('[CreateExternalConversation] Error:', error);
