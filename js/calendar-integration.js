@@ -195,8 +195,8 @@
         console.log('[CreateExternalConversation] Finished adding participants:', addedCount);
     }
 
-    // Add link to event description textarea
-    function addLinksToEventDescription(externalLink) {
+    // Add links to event description textarea
+    function addLinksToEventDescription(externalLink, internalLink) {
         console.log('[CreateExternalConversation] Looking for description textarea...');
         
         // Find the textarea in property-text__input
@@ -218,8 +218,11 @@
             return;
         }
         
-        // Add link
-        const linkText = '\n\nTalk Link:\n' + externalLink;
+        // Add links
+        let linkText = '\n\nTalk Link:\nExternal: ' + externalLink;
+        if (internalLink) {
+            linkText += '\nInternal: ' + internalLink;
+        }
         const newContent = currentContent + linkText;
         
         // Set content
@@ -229,8 +232,8 @@
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
         textarea.dispatchEvent(new Event('change', { bubbles: true }));
         
-        console.log('[CreateExternalConversation] Link added to description textarea');
-        showNotification('Link added to event description!', 'success', 3000);
+        console.log('[CreateExternalConversation] Links added to description textarea');
+        showNotification('Links added to event description!', 'success', 3000);
     }
 
     // Create external conversation
@@ -270,6 +273,7 @@
 
             // Add current user to the conversation automatically
             console.log('[CreateExternalConversation] Adding current user to conversation...');
+            let internalLink = null;
             try {
                 const currentUser = OC.getCurrentUser();
                 if (currentUser && currentUser.uid) {
@@ -287,6 +291,11 @@
                     const userData = await userResponse.json();
                     if (userData.ocs?.meta?.statuscode === 200) {
                         console.log('[CreateExternalConversation] Current user added successfully');
+                        // Get internal link from response
+                        if (userData.ocs?.data?.internalToken) {
+                            internalLink = window.location.origin + '/call/' + userData.ocs.data.internalToken;
+                            console.log('[CreateExternalConversation] Internal link:', internalLink);
+                        }
                     }
                 }
             } catch (userError) {
@@ -309,15 +318,22 @@
             
             // Show external link
             showNotification('External: ' + externalLink, 'info', 8000);
+            
+            // Show internal link if available
+            if (internalLink) {
+                showNotification('Internal: ' + internalLink, 'info', 8000);
+            }
 
-            // Try to add link to event description textarea
-            addLinksToEventDescription(externalLink);
+            // Try to add links to event description textarea
+            addLinksToEventDescription(externalLink, internalLink);
 
             // Try to add event participants to the conversation
             addParticipantsToConversation(externalToken, eventName);
 
             console.log('[CreateExternalConversation] Created conversation successfully:', {
                 external: externalLink,
+                internal: internalLink,
+            });
             });
 
         } catch (error) {
