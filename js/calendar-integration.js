@@ -334,10 +334,6 @@
         console.log('[CreateExternalConversation] Found both title input and description textarea');
 
         // Find Talk button to locate where to insert our button
-        const allButtons = rightPanel.querySelectorAll('button');
-        let insertionPoint = null;
-        
-        // Look for Talk button by text content or class
         let talkButton = null;
         allButtons.forEach(btn => {
             if (btn.textContent.includes('Talk') || btn.title.includes('Talk')) {
