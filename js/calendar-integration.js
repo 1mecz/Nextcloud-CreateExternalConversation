@@ -257,15 +257,62 @@
             return;
         }
 
-        // Find title input
-        const titleInputs = rightPanel.querySelectorAll('input[type="text"]');
-        let titleInput = null;
-        
-        // The first text input is usually the title
-        if (titleInputs.length > 0) {
-            titleInput = titleInputs[0];
-            console.log('[CreateExternalConversation] Found title input (first text input)');
+        // Debug: Show all inputs in the panel
+        const allInputs = rightPanel.querySelectorAll('input');
+        console.log('[CreateExternalConversation] All inputs found:', allInputs.length);
+        allInputs.forEach((input, idx) => {
+            console.log(`  Input ${idx}:`, {
+                type: input.type,
+                placeholder: input.placeholder,
+                className: input.className,
+                name: input.name,
+                id: input.id,
+                value: input.value ? input.value.substring(0, 30) : '',
+            });
+        });
+
+        // Debug: Show all textareas
+        const allTextareas = rightPanel.querySelectorAll('textarea');
+        console.log('[CreateExternalConversation] All textareas found:', allTextareas.length);
+        allTextareas.forEach((textarea, idx) => {
+            console.log(`  Textarea ${idx}:`, {
+                placeholder: textarea.placeholder,
+                className: textarea.className,
+                name: textarea.name,
+                id: textarea.id,
+            });
+        });
+
+        // Debug: Show buttons
+        const allButtons = rightPanel.querySelectorAll('button');
+        console.log('[CreateExternalConversation] All buttons found:', allButtons.length);
+        allButtons.forEach((btn, idx) => {
+            console.log(`  Button ${idx}:`, {
+                text: btn.textContent.substring(0, 50),
+                className: btn.className,
+                title: btn.title,
+                id: btn.id,
+            });
+        });
+
+        // If no inputs found, show HTML snippet
+        if (allInputs.length === 0) {
+            console.log('[CreateExternalConversation] No inputs found. Panel HTML (first 2000 chars):');
+            console.log(rightPanel.innerHTML.substring(0, 2000));
+            console.log('[CreateExternalConversation] Retrying in 1 second...');
+            setTimeout(() => tryAddButtonToRightPanel(rightPanel), 1000);
+            return;
         }
+
+        // Find title input - try different selectors
+        let titleInput = rightPanel.querySelector('input[placeholder*="title"], input[placeholder*="Title"], input[placeholder*="event"], input[type="text"]');
+        
+        if (!titleInput && allInputs.length > 0) {
+            titleInput = allInputs[0];
+            console.log('[CreateExternalConversation] Using first input as title input');
+        }
+
+        console.log('[CreateExternalConversation] Title input found:', !!titleInput);
 
         if (!titleInput) {
             console.log('[CreateExternalConversation] Title input not found yet, retrying...');
@@ -274,8 +321,10 @@
         }
 
         // Find description textarea
-        const descriptionTextarea = rightPanel.querySelector('textarea');
+        let descriptionTextarea = rightPanel.querySelector('textarea');
         
+        console.log('[CreateExternalConversation] Description textarea found:', !!descriptionTextarea);
+
         if (!descriptionTextarea) {
             console.log('[CreateExternalConversation] Description textarea not found yet, retrying...');
             setTimeout(() => tryAddButtonToRightPanel(rightPanel), 500);
