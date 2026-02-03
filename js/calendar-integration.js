@@ -268,6 +268,32 @@
             const externalLink = externalData.ocs.data.link;
             const externalToken = externalData.ocs.data.token;
 
+            // Add current user to the conversation automatically
+            console.log('[CreateExternalConversation] Adding current user to conversation...');
+            try {
+                const currentUser = OC.getCurrentUser();
+                if (currentUser && currentUser.uid) {
+                    const userResponse = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation/' + externalToken + '/participants?format=json', {
+                        method: 'POST',
+                        headers: {
+                            'OCS-APIRequest': 'true',
+                            'requesttoken': OC.requestToken,
+                        },
+                        body: new URLSearchParams({
+                            federatedId: currentUser.uid,
+                        }),
+                    });
+                    
+                    const userData = await userResponse.json();
+                    if (userData.ocs?.meta?.statuscode === 200) {
+                        console.log('[CreateExternalConversation] Current user added successfully');
+                    }
+                }
+            } catch (userError) {
+                console.error('[CreateExternalConversation] Error adding current user:', userError);
+                // Continue even if adding current user fails
+            }
+
             // Remove creating notification
             if (creatingNotification && creatingNotification.parentElement) {
                 creatingNotification.style.animation = 'slideOut 0.3s ease';
