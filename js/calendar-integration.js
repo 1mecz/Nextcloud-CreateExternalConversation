@@ -1,0 +1,331 @@
+/**
+ * Calendar integration - Add "Create External Conversation" button to Calendar events
+ */
+
+(function() {
+    'use strict';
+
+    console.log('[CreateExternalConversation] Calendar integration initialized');
+
+    // Notification system (same as in talk-integration.js)
+    function showNotification(message, type = 'info', duration = 3000) {
+        const container = document.querySelector('.notification-container') || createNotificationContainer();
+        
+        const notification = document.createElement('div');
+        notification.className = `external-conversation-notification ${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+            word-wrap: break-word;
+        `;
+
+        // Set colors based on type
+        if (type === 'success') {
+            notification.style.background = '#28a745';
+            notification.style.color = 'white';
+        } else if (type === 'error') {
+            notification.style.background = '#e74c3c';
+            notification.style.color = 'white';
+        } else { // info
+            notification.style.background = '#0082c9';
+            notification.style.color = 'white';
+        }
+
+        container.appendChild(notification);
+
+        // Auto remove after duration (unless duration is 0)
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                    // Remove container if empty
+                    if (container.children.length === 0 && container.parentElement) {
+                        container.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+
+        return notification;
+    }
+
+    function createNotificationContainer() {
+        const container = document.createElement('div');
+        container.className = 'notification-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+        `;
+        document.body.appendChild(container);
+        return container;
+    }
+
+    // Add CSS animations
+    function addNotificationStyles() {
+        if (document.getElementById('external-conversation-notification-styles')) {
+            return;
+        }
+        
+        const style = document.createElement('style');
+        style.id = 'external-conversation-notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(-100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(-100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    addNotificationStyles();
+
+    /**
+     * Create external conversation and add links to event description
+     */
+    async function createConversationForEvent(eventName, descriptionTextarea) {
+        if (!eventName) {
+            showNotification('Event name is required', 'error');
+            return;
+        }
+
+        const creatingNotification = showNotification('Creating conversation...', 'info', 0);
+
+        try {
+            // Step 1: Create external conversation
+            const externalResponse = await fetch('/ocs/v2.php/apps/create_external_conversation/api/v1/conversation?format=json', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'OCS-APIRequest': 'true',
+                    'requesttoken': OC.requestToken,
+                },
+                body: JSON.stringify({
+                    conversationName: eventName,
+                    participants: [],
+                }),
+            });
+
+            const externalData = await externalResponse.json();
+
+            if (!externalData.ocs?.data?.success) {
+                throw new Error(externalData.ocs?.data?.error || 'Failed to create external conversation');
+            }
+
+            const externalLink = externalData.ocs.data.link;
+            const externalToken = externalData.ocs.data.token;
+
+            // Step 2: Create local federated conversation
+            const localResponse = await fetch('/ocs/v2.php/apps/spreed/api/v4/room?format=json', {
+                method: 'POST',
+                headers: {
+                    'OCS-APIRequest': 'true',
+                    'requesttoken': OC.requestToken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    roomType: '2', // Group conversation
+                    roomName: eventName,
+                }),
+            });
+
+            const localData = await localResponse.json();
+
+            if (!localData.ocs?.data?.token) {
+                throw new Error('Failed to create local conversation');
+            }
+
+            const localToken = localData.ocs.data.token;
+            const localLink = window.location.origin + '/call/' + localToken;
+
+            // Remove creating notification
+            if (creatingNotification && creatingNotification.parentElement) {
+                creatingNotification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (creatingNotification.parentElement) {
+                        creatingNotification.remove();
+                    }
+                }, 300);
+            }
+
+            // Step 3: Add links to event description
+            const currentDescription = descriptionTextarea.value || '';
+            const newDescription = currentDescription + 
+                (currentDescription ? '\n\n' : '') +
+                'Talk Links:\n' +
+                'External: ' + externalLink + '\n' +
+                'Internal: ' + localLink;
+
+            descriptionTextarea.value = newDescription;
+            
+            // Trigger input event to notify Calendar app
+            descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            descriptionTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+
+            showNotification('Conversation created and links added!', 'success');
+
+            console.log('[CreateExternalConversation] Created conversations:', {
+                external: externalLink,
+                internal: localLink,
+            });
+
+        } catch (error) {
+            // Remove creating notification
+            if (creatingNotification && creatingNotification.parentElement) {
+                creatingNotification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (creatingNotification.parentElement) {
+                        creatingNotification.remove();
+                    }
+                }, 300);
+            }
+
+            console.error('[CreateExternalConversation] Error creating conversation:', error);
+            showNotification('Error: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Add button to calendar event modal
+     */
+    function addButtonToCalendarEvent() {
+        // Wait for Calendar event modal to appear
+        const observer = new MutationObserver(() => {
+            // Look for Calendar event editor modal
+            const eventModal = document.querySelector('.event-popover, .modal-wrapper, [class*="event-editor"]');
+            if (!eventModal) return;
+
+            // Check if button already exists
+            if (eventModal.querySelector('.create-external-conversation-calendar-btn')) {
+                return;
+            }
+
+            // Find the event name/title input
+            const titleInput = eventModal.querySelector('input[type="text"][placeholder*="title"], input[type="text"][placeholder*="Title"], input.event-title, [class*="title"] input');
+            if (!titleInput) {
+                console.log('[CreateExternalConversation] Title input not found in modal');
+                return;
+            }
+
+            // Find the description textarea
+            const descriptionTextarea = eventModal.querySelector('textarea[placeholder*="description"], textarea[placeholder*="Description"], textarea.event-description, [class*="description"] textarea');
+            if (!descriptionTextarea) {
+                console.log('[CreateExternalConversation] Description textarea not found in modal');
+                return;
+            }
+
+            // Find the "Add Talk conversation" button or similar area
+            const talkButton = eventModal.querySelector('button[class*="talk"], button:has(.icon-talk)');
+            let insertionPoint = null;
+
+            if (talkButton) {
+                // Insert after Talk button
+                insertionPoint = talkButton.parentElement;
+            } else {
+                // Insert after description or in actions area
+                insertionPoint = descriptionTextarea.closest('.property, .form-group, [class*="description"]');
+                if (!insertionPoint) {
+                    insertionPoint = eventModal.querySelector('.event-actions, .modal-buttons, [class*="actions"]');
+                }
+            }
+
+            if (!insertionPoint) {
+                console.log('[CreateExternalConversation] Could not find insertion point');
+                return;
+            }
+
+            // Create button
+            const button = document.createElement('button');
+            button.className = 'create-external-conversation-calendar-btn';
+            button.type = 'button';
+            button.title = 'Create external conversation and add links to event';
+            button.textContent = '🌐 Create External Conversation';
+            button.style.cssText = `
+                margin: 8px 0;
+                padding: 10px 15px;
+                background-color: #0082c9;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+                font-weight: 500;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const eventName = titleInput.value.trim();
+                if (!eventName) {
+                    showNotification('Please enter an event title first', 'error');
+                    return;
+                }
+
+                button.disabled = true;
+                button.style.opacity = '0.6';
+                button.style.cursor = 'not-allowed';
+
+                await createConversationForEvent(eventName, descriptionTextarea);
+
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+            });
+
+            // Insert button
+            if (talkButton) {
+                insertionPoint.insertBefore(button, talkButton.nextSibling);
+            } else {
+                insertionPoint.appendChild(button);
+            }
+
+            console.log('[CreateExternalConversation] Button added to calendar event');
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
+    }
+
+    // Initialize
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addButtonToCalendarEvent);
+    } else {
+        addButtonToCalendarEvent();
+    }
+
+})();

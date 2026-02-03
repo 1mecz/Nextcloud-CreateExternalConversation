@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace OCA\CreateExternalConversation\AppInfo;
 
+use OCA\CreateExternalConversation\Listener\LoadCalendarIntegrationListener;
 use OCA\CreateExternalConversation\Listener\LoadTalkIntegrationListener;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
@@ -18,10 +19,16 @@ class Application extends App implements IBootstrap {
     }
 
     public function register(IRegistrationContext $context): void {
-        // Register event listeners
+        // Register event listeners for Talk
         $context->registerEventListener(
             BeforeTemplateRenderedEvent::class,
             LoadTalkIntegrationListener::class
+        );
+        
+        // Register event listeners for Calendar
+        $context->registerEventListener(
+            BeforeTemplateRenderedEvent::class,
+            LoadCalendarIntegrationListener::class
         );
     }
 
