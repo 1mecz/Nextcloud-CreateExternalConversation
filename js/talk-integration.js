@@ -125,24 +125,35 @@
         // Add button to Talk dashboard
         addButtonToDashboard();
 
-        // Přidat tlačítko i při změně URL (např. návrat na Home)
-        window.addEventListener('hashchange', () => {
-            setTimeout(addButtonToDashboard, 500);
-        });
-
-        // Přidat tlačítko i při změně DOMu dashboardu (např. SPA navigace)
-        const dashboardObserver = new MutationObserver(() => {
-            addButtonToDashboard();
-        });
-        // Pozorovat hlavní obsah Talku (kontejner s dashboardem)
-        const dashboardContainer = document.querySelector('.app-content');
-        if (dashboardContainer) {
+        // Helper pro navázání observeru na dashboard
+        let dashboardObserver = null;
+        function observeDashboard() {
+            const dashboardContainer = document.querySelector('.app-content');
+            if (!dashboardContainer) return;
+            if (dashboardObserver) {
+                dashboardObserver.disconnect();
+            }
+            dashboardObserver = new MutationObserver(() => {
+                addButtonToDashboard();
+            });
             dashboardObserver.observe(dashboardContainer, {
                 childList: true,
                 subtree: true,
                 attributes: false
             });
         }
+
+        // Při změně URL vždy zkusit přidat tlačítko a navázat observer
+        window.addEventListener('hashchange', () => {
+            setTimeout(() => {
+                addButtonToDashboard();
+                observeDashboard();
+            }, 500);
+        });
+
+        // První navázání observeru a přidání tlačítka
+        addButtonToDashboard();
+        observeDashboard();
 
         // Add button to top-bar for adding participants to existing conversations
         // Delay initial call to allow Talk to load conversation
