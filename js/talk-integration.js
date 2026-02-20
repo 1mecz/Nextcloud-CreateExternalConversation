@@ -980,7 +980,10 @@
                 </div>
                 
                 <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
-                    <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">Add Participants (optional)</label>
+                    <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">
+                    Add Participants (optional)
+                    <span style="font-size: 12px; color: var(--color-text-lighter, #666); margin-left: 4px;">- only internal users</span>
+                    </label>
                     <input type="text" id="conv-participant-search" placeholder="Search users..." autocomplete="off" style="
                         width: 100%;
                         padding: 10px 12px;
