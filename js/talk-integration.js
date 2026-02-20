@@ -946,128 +946,131 @@
 
         modalContent.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
-                <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Create External Conversation</h2>
-                <button type="button" class="modal-close-btn" style="
-                    background: none;
-                    border: none;
-                    font-size: 24px;
-                    cursor: pointer;
-                    color: var(--color-text, #333);
-                    padding: 0;
-                    width: 28px;
-                    height: 28px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    opacity: 0.7;
-                    transition: opacity 0.2s ease;
-                " title="Close">
-                    ×
-                </button>
+            <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Create External Conversation</h2>
+            <button type="button" class="modal-close-btn" style="
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: var(--color-text, #333);
+                padding: 0;
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0.7;
+                transition: opacity 0.2s ease;
+            " title="Close">
+                ×
+            </button>
             </div>
             <form id="create-external-conversation-form" style="display: flex; flex-direction: column; flex: 1; gap: 16px;">
-                <div>
-                    <label for="conversation-name" style="display: block; font-weight: 500; margin-bottom: 8px;">Conversation Name</label>
-                    <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name" style="
-                        width: 100%;
-                        padding: 10px 12px;
-                        border: 2px solid var(--color-border, #ddd);
-                        border-radius: 6px;
-                        font-size: 14px;
-                        box-sizing: border-box;
-                        transition: border-color 0.2s ease;
-                    ">
+            <div>
+                <label for="conversation-name" style="display: block; font-weight: 500; margin-bottom: 8px;">Conversation Name</label>
+                <input type="text" id="conversation-name" name="conversationName" required placeholder="Enter conversation name" style="
+                width: 100%;
+                padding: 10px 12px;
+                border: 2px solid var(--color-border, #ddd);
+                border-radius: 6px;
+                font-size: 14px;
+                box-sizing: border-box;
+                transition: border-color 0.2s ease;
+                ">
+            </div>
+            
+            <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">
+                Add Participants (optional)
+                </label>
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 8px 12px; background: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
+                <span style="font-size: 16px; color: #ff6b6b;">!</span>
+                <span style="font-size: 12px; color: #333;">Only internal users can be added during conversation creation. External users can be added later.</span>
                 </div>
-                
-                <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
-                    <label for="conv-participant-search" style="display: block; font-weight: 500; margin-bottom: 8px;">
-                    Add Participants (optional)
-                    <span style="font-size: 12px; color: var(--color-text-lighter, #666); margin-left: 4px;">- only internal users</span>
-                    </label>
-                    <input type="text" id="conv-participant-search" placeholder="Search users..." autocomplete="off" style="
-                        width: 100%;
-                        padding: 10px 12px;
-                        border: 2px solid var(--color-border, #ddd);
-                        border-radius: 6px;
-                        font-size: 14px;
-                        box-sizing: border-box;
-                        transition: border-color 0.2s ease;
-                    ">
-                    <div id="conv-participant-search-results" class="search-results" style="
-                        display: none;
-                        margin-top: 8px;
-                        border: 1px solid var(--color-border, #ddd);
-                        border-radius: 6px;
-                        max-height: 250px;
-                        overflow-y: auto;
-                        background: var(--color-main-background, #f5f5f5);
-                        width: 100%;
-                        box-sizing: border-box;
-                    "></div>
-                    <div id="conv-selected-participants" class="selected-participants" style="
-                        margin-top: 12px;
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 8px;
-                    "></div>
-                </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary" style="
-                        flex: 1;
-                        padding: 10px 16px;
-                        border: none;
-                        border-radius: 6px;
-                        background: var(--color-primary, #0082c9);
-                        color: white;
-                        cursor: pointer;
-                        font-weight: 500;
-                        transition: opacity 0.2s ease;
-                    ">Create</button>
-                </div>
+                <input type="text" id="conv-participant-search" placeholder="Search users..." autocomplete="off" style="
+                width: 100%;
+                padding: 10px 12px;
+                border: 2px solid var(--color-border, #ddd);
+                border-radius: 6px;
+                font-size: 14px;
+                box-sizing: border-box;
+                transition: border-color 0.2s ease;
+                ">
+                <div id="conv-participant-search-results" class="search-results" style="
+                display: none;
+                margin-top: 8px;
+                border: 1px solid var(--color-border, #ddd);
+                border-radius: 6px;
+                max-height: 250px;
+                overflow-y: auto;
+                background: var(--color-main-background, #f5f5f5);
+                width: 100%;
+                box-sizing: border-box;
+                "></div>
+                <div id="conv-selected-participants" class="selected-participants" style="
+                margin-top: 12px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                "></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary" style="
+                flex: 1;
+                padding: 10px 16px;
+                border: none;
+                border-radius: 6px;
+                background: var(--color-primary, #0082c9);
+                color: white;
+                cursor: pointer;
+                font-weight: 500;
+                transition: opacity 0.2s ease;
+                ">Create</button>
+            </div>
             </form>
             <div id="result-container" style="display: none; margin-top: 16px;">
-                <div class="result-success" style="padding: 12px; background: #28a745; border-radius: 6px; color: white;">
-                    <p style="margin: 0 0 8px 0;"><strong>✓ Success!</strong></p>
-                    <p style="margin: 0 0 12px 0;">Conversation created with <span id="participants-count">0</span> participant(s)</p>
-                    <input type="text" id="result-link" readonly class="result-link" style="
-                        width: 100%;
-                        padding: 8px;
-                        border: 1px solid rgba(255,255,255,0.3);
-                        border-radius: 4px;
-                        background: rgba(255,255,255,0.1);
-                        color: white;
-                        box-sizing: border-box;
-                        margin: 8px 0;
-                    ">
-                    <div class="result-actions" style="display: flex; gap: 10px;">
-                        <button type="button" class="btn btn-primary" id="copy-link-btn" style="
-                            flex: 1;
-                            padding: 8px 12px;
-                            background: rgba(255,255,255,0.2);
-                            color: white;
-                            border: 1px solid rgba(255,255,255,0.3);
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-weight: 500;
-                        ">Copy Link</button>
-                        <button type="button" class="btn btn-secondary" id="open-link-btn" style="
-                            flex: 1;
-                            padding: 8px 12px;
-                            background: rgba(255,255,255,0.2);
-                            color: white;
-                            border: 1px solid rgba(255,255,255,0.3);
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-weight: 500;
-                        ">Open</button>
-                    </div>
+            <div class="result-success" style="padding: 12px; background: #28a745; border-radius: 6px; color: white;">
+                <p style="margin: 0 0 8px 0;"><strong>✓ Success!</strong></p>
+                <p style="margin: 0 0 12px 0;">Conversation created with <span id="participants-count">0</span> participant(s)</p>
+                <input type="text" id="result-link" readonly class="result-link" style="
+                width: 100%;
+                padding: 8px;
+                border: 1px solid rgba(255,255,255,0.3);
+                border-radius: 4px;
+                background: rgba(255,255,255,0.1);
+                color: white;
+                box-sizing: border-box;
+                margin: 8px 0;
+                ">
+                <div class="result-actions" style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-primary" id="copy-link-btn" style="
+                    flex: 1;
+                    padding: 8px 12px;
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    border: 1px solid rgba(255,255,255,0.3);
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 500;
+                ">Copy Link</button>
+                <button type="button" class="btn btn-secondary" id="open-link-btn" style="
+                    flex: 1;
+                    padding: 8px 12px;
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    border: 1px solid rgba(255,255,255,0.3);
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 500;
+                ">Open</button>
                 </div>
             </div>
+            </div>
             <div id="error-container" style="display: none; margin-top: 16px;">
-                <div style="padding: 12px; background: #fff5f5; border-radius: 6px; color: #e74c3c; border-left: 4px solid #e74c3c;">
-                    <p id="error-message" style="margin: 0;"></p>
-                </div>
+            <div style="padding: 12px; background: #fff5f5; border-radius: 6px; color: #e74c3c; border-left: 4px solid #e74c3c;">
+                <p id="error-message" style="margin: 0;"></p>
+            </div>
             </div>
         `;
 
