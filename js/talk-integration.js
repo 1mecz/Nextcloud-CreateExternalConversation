@@ -906,6 +906,12 @@
         // Add styles
         addStyles();
 
+        // Zabránit duplikaci tlačítka
+        if (dashboardActions.querySelector('.create-external-conversation-dashboard-btn')) {
+            // Tlačítko už existuje, nic nepřidávat
+            return;
+        }
+
         // Create button
         const button = document.createElement('button');
         button.className = 'create-external-conversation-dashboard-btn talk-dashboard-btn button-vue button-vue--size-normal button-vue--secondary';
